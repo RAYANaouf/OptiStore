@@ -107,6 +107,28 @@ def get_stock_levels():
         }
 
 @frappe.whitelist()
+def get_customers():
+    """Get customers from ERPNext"""
+    try:
+        customers = frappe.db.get_all(
+            "Customer",
+            fields=['name', 'customer_name'],
+            filters={'disabled': 0},
+            order_by='customer_name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': customers
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching customers: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@frappe.whitelist()
 def get_sales_history(limit=50):
     """Get recent sales history"""
     try:

@@ -10,9 +10,6 @@
           ← Back to Dashboard
         </button>
       </div>
-      <button @click="$auth.logout()" class="logout-btn-pos">
-        Logout
-      </button>
     </div>
     
     <!-- Timeline Sidebar -->
@@ -46,7 +43,19 @@
         <!-- Left Side - Selected Items Card -->
         <div class="selected-items-card">
           <div class="card-header">
-            <h3>Selected Items</h3>
+            <div class="customer-section">
+              <label for="customer-select">Customer:</label>
+              <select 
+                id="customer-select"
+                v-model="selectedCustomer"
+                class="customer-select"
+              >
+                <option value="">Walk-in Customer</option>
+                <option v-for="customer in customers" :key="customer.name" :value="customer.name">
+                  {{ customer.customer_name }}
+                </option>
+              </select>
+            </div>
             <div class="total-amount">
               Total: ${{ totalAmount.toFixed(2) }}
             </div>
@@ -74,13 +83,21 @@
         <!-- Right Side - Item Selector -->
         <div class="item-selector">
           <div class="selector-header">
-            <h3>Products</h3>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              placeholder="Search products..."
-              class="search-input"
-            />
+            <div class="search-container">
+              <input 
+                type="text" 
+                v-model="searchQuery" 
+                placeholder="Search products..."
+                class="search-input"
+              />
+              <button 
+                v-if="searchQuery" 
+                @click="clearSearch" 
+                class="clear-search-btn"
+              >
+                ×
+              </button>
+            </div>
           </div>
           <div v-if="loading" class="loading-state">
             <p>Loading products...</p>
@@ -117,7 +134,9 @@ export default {
       searchQuery: '',
       products: [],
       allProducts: [], // Store all products
-      loading: false
+      loading: false,
+      selectedCustomer: '',
+      customers: []
     }
   },
   computed: {
@@ -142,10 +161,24 @@ export default {
   },
   mounted() {
     this.fetchProducts();
+    this.fetchCustomers();
   },
   methods: {
     toggleTimeline() {
       this.isTimelineOpen = !this.isTimelineOpen;
+    },
+    clearSearch() {
+      this.searchQuery = '';
+    },
+    async fetchCustomers() {
+      try {
+        const response = await this.$call('opti_stock.api.get_customers');
+        if (response && response.data) {
+          this.customers = response.data;
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+      }
     },
     async fetchProducts() {
       this.loading = true;
@@ -217,7 +250,7 @@ export default {
       try {
         // Create sales invoice in ERPNext
         const response = await this.$call('opti_stock.api.create_sales_invoice', {
-          customer: 'Walk-in Customer', // Default customer
+          customer: this.selectedCustomer || 'Walk-in Customer',
           items: this.selectedItems.map(item => ({
             item_code: item.code || item.id,
             qty: item.quantity,
@@ -247,14 +280,14 @@ export default {
 
 .pos-nav {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .nav-left {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -293,21 +326,6 @@ export default {
 
 .back-btn:hover {
   background-color: #16a085;
-}
-
-.logout-btn-pos {
-  padding: 10px 20px;
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.logout-btn-pos:hover {
-  background-color: #c0392b;
 }
 
 /* Timeline Sidebar */
@@ -395,8 +413,9 @@ export default {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
-  height: 100%;
-  padding: 40px;
+  height: calc(100vh - 80px); /* Increased bottom space */
+  padding: 20px 20px 30px 20px; /* Added bottom padding */
+  overflow: hidden;
 }
 
 /* Selected Items Card */
@@ -405,12 +424,16 @@ export default {
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e1e8ed;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 15px;
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid #e1e8ed;
@@ -422,6 +445,34 @@ export default {
   font-size: 1.3em;
 }
 
+.customer-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer-section label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 14px;
+  min-width: 80px;
+}
+
+.customer-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  transition: border-color 0.3s;
+}
+
+.customer-select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
 .total-amount {
   font-size: 1.2em;
   font-weight: bold;
@@ -429,7 +480,7 @@ export default {
 }
 
 .items-list {
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
   margin-bottom: 20px;
 }
@@ -482,6 +533,7 @@ export default {
 .cart-actions {
   display: flex;
   gap: 10px;
+  margin-top: auto;
 }
 
 .clear-btn {
@@ -523,16 +575,20 @@ export default {
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e1e8ed;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .selector-header {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
-.selector-header h3 {
-  margin: 0 0 15px;
-  color: #2c3e50;
-  font-size: 1.3em;
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .search-input {
@@ -549,6 +605,29 @@ export default {
   border-color: #3498db;
 }
 
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #7f8c8d;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.clear-search-btn:hover {
+  background-color: #e1e8ed;
+  color: #2c3e50;
+}
+
 .loading-state {
   text-align: center;
   padding: 40px;
@@ -560,7 +639,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
-  max-height: 500px;
+  flex: 1;
   overflow-y: auto;
 }
 

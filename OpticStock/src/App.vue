@@ -30,6 +30,7 @@ export default {
   height: 100vh;
   font-family: Arial, sans-serif;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .app-header {
@@ -71,6 +72,7 @@ export default {
 .main-content {
   flex: 1;
   background-color: #f5f5f5;
-  overflow-y: auto;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 </style>
