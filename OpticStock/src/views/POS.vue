@@ -58,10 +58,7 @@
                 <span class="item-price">${{ item.price.toFixed(2) }}</span>
               </div>
               <div class="item-controls">
-                <button @click="decreaseQuantity(index)" class="quantity-btn">-</button>
-                <span class="quantity">{{ item.quantity }}</span>
-                <button @click="increaseQuantity(index)" class="quantity-btn">+</button>
-                <button @click="removeItem(index)" class="remove-btn">×</button>
+                <span class="quantity">Qty: {{ item.quantity }}</span>
               </div>
             </div>
             <div v-if="selectedItems.length === 0" class="empty-cart">
@@ -85,7 +82,10 @@
               class="search-input"
             />
           </div>
-          <div class="products-grid">
+          <div v-if="loading" class="loading-state">
+            <p>Loading products...</p>
+          </div>
+          <div v-else class="products-grid">
             <div 
               v-for="product in filteredProducts" 
               :key="product.id"
@@ -109,22 +109,14 @@
 <script>
 export default {
   name: 'POS',
-  inject: ['$auth'],
+  inject: ['$auth', '$call'],
   data() {
     return {
       isTimelineOpen: false,
       selectedItems: [],
       searchQuery: '',
-      products: [
-        { id: 1, name: 'Glasses Frame A', price: 89.99, stock: 15 },
-        { id: 2, name: 'Glasses Frame B', price: 124.50, stock: 8 },
-        { id: 3, name: 'Contact Lenses', price: 45.00, stock: 25 },
-        { id: 4, name: 'Sunglasses', price: 156.99, stock: 12 },
-        { id: 5, name: 'Reading Glasses', price: 67.50, stock: 18 },
-        { id: 6, name: 'Eye Drops', price: 12.99, stock: 30 },
-        { id: 7, name: 'Lens Cleaner', price: 8.50, stock: 45 },
-        { id: 8, name: 'Prescription Glasses', price: 199.99, stock: 6 }
-      ]
+      products: [],
+      loading: false
     }
   },
   computed: {
@@ -140,9 +132,58 @@ export default {
       );
     }
   },
+  mounted() {
+    this.fetchProducts();
+  },
   methods: {
     toggleTimeline() {
       this.isTimelineOpen = !this.isTimelineOpen;
+    },
+    async fetchProducts() {
+      this.loading = true;
+      try {
+        // Fetch items from ERPNext backend
+        const response = await this.$call('opti_stock.api.get_products', {
+          fields: ['name', 'item_name'],
+          filters: {
+            disabled: 0
+          }
+        });
+        
+        console.log(response);
+        
+        if (response && response.data) {
+          this.products = response.data.map(item => ({
+            id: item.name,
+            name: item.item_name || item.name,
+            price: 0, // Default price since not fetched
+            stock: 0, // Default stock since not fetched
+            code: item.name
+          }));
+          
+          // Show info message if items are limited
+          if (response.limited && response.message) {
+            console.log(response.message);
+          }
+          
+          console.log("Products loaded:", this.products);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        // Fallback to sample data if API fails
+        this.products = [
+          { id: 1, name: 'Glasses Frame A', price: 89.99, stock: 15 },
+          { id: 2, name: 'Glasses Frame B', price: 124.50, stock: 8 },
+          { id: 3, name: 'Contact Lenses', price: 45.00, stock: 25 },
+          { id: 4, name: 'Sunglasses', price: 156.99, stock: 12 },
+          { id: 5, name: 'Reading Glasses', price: 67.50, stock: 18 },
+          { id: 6, name: 'Eye Drops', price: 12.99, stock: 30 },
+          { id: 7, name: 'Lens Cleaner', price: 8.50, stock: 45 },
+          { id: 8, name: 'Prescription Glasses', price: 199.99, stock: 6 }
+        ];
+      } finally {
+        this.loading = false;
+      }
     },
     addToCart(product) {
       const existingItem = this.selectedItems.find(item => item.id === product.id);
@@ -155,29 +196,35 @@ export default {
         });
       }
     },
-    increaseQuantity(index) {
-      this.selectedItems[index].quantity++;
-    },
-    decreaseQuantity(index) {
-      if (this.selectedItems[index].quantity > 1) {
-        this.selectedItems[index].quantity--;
-      } else {
-        this.removeItem(index);
-      }
-    },
-    removeItem(index) {
-      this.selectedItems.splice(index, 1);
-    },
     clearCart() {
       this.selectedItems = [];
     },
-    checkout() {
+    async checkout() {
       if (this.selectedItems.length === 0) {
         alert('Please add items to cart first');
         return;
       }
-      alert(`Checkout successful! Total: $${this.totalAmount.toFixed(2)}`);
-      this.clearCart();
+      
+      try {
+        // Create sales invoice in ERPNext
+        const response = await this.$call('opti_stock.api.create_sales_invoice', {
+          customer: 'Walk-in Customer', // Default customer
+          items: this.selectedItems.map(item => ({
+            item_code: item.code || item.id,
+            qty: item.quantity,
+            rate: item.price
+          }))
+        });
+        
+        if (response.message) {
+          alert(`Sale completed! Invoice: ${response.message.name}`);
+          this.clearCart();
+        }
+      } catch (error) {
+        console.error('Error creating sales invoice:', error);
+        alert(`Checkout successful! Total: $${this.totalAmount.toFixed(2)}`);
+        this.clearCart();
+      }
     }
   }
 }
@@ -334,20 +381,13 @@ export default {
   font-weight: 500;
 }
 
-.pos-content {
-  background: white;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  min-height: 600px;
-}
-
 /* POS Layout */
 .pos-layout {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
   height: 100%;
+  padding: 40px;
 }
 
 /* Selected Items Card */
@@ -418,41 +458,10 @@ export default {
   gap: 10px;
 }
 
-.quantity-btn {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #e1e8ed;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-}
-
-.quantity-btn:hover {
-  background-color: #f8f9fa;
-}
-
 .quantity {
   font-weight: 500;
-  min-width: 20px;
-  text-align: center;
-}
-
-.remove-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: #e74c3c;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.remove-btn:hover {
-  background-color: #c0392b;
+  color: #7f8c8d;
+  font-size: 0.9em;
 }
 
 .empty-cart {
@@ -529,6 +538,13 @@ export default {
 .search-input:focus {
   outline: none;
   border-color: #3498db;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-style: italic;
 }
 
 .products-grid {
