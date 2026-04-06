@@ -1,10 +1,5 @@
 <template>
   <div class="dashboard">
-    <header class="dashboard-header">
-      <h1>OpticStock Dashboard</h1>
-      <p>Welcome back, {{ username }}</p>
-    </header>
-    
     <div class="dashboard-grid">
       <div class="dashboard-card" @click="$router.push('/pos')">
         <div class="card-icon">💳</div>
@@ -26,31 +21,17 @@
 
 <script>
 export default {
-  data() {
-    return {
-      username: 'Admin'
-    }
-  }
+  name: 'Dashboard'
 }
 </script>
 
 <style scoped>
 .dashboard {
   padding: 30px;
-}
-
-.dashboard-header {
-  margin-bottom: 30px;
-}
-
-.dashboard-header h1 {
-  color: #2c3e50;
-  margin: 0 0 10px;
-}
-
-.dashboard-header p {
-  color: #7f8c8d;
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
 }
 
 .dashboard-grid {
