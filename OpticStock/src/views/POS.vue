@@ -41,13 +41,67 @@
       </div>
     </div>
     
-    <div class="pos-header">
-      <h1>💳 POS App</h1>
-      <p>Point of Sale System</p>
-    </div>
-    
     <div class="pos-content">
-      <!-- POS functionality will be implemented here -->
+      <div class="pos-layout">
+        <!-- Left Side - Selected Items Card -->
+        <div class="selected-items-card">
+          <div class="card-header">
+            <h3>Selected Items</h3>
+            <div class="total-amount">
+              Total: ${{ totalAmount.toFixed(2) }}
+            </div>
+          </div>
+          <div class="items-list">
+            <div v-for="(item, index) in selectedItems" :key="index" class="selected-item">
+              <div class="item-info">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-price">${{ item.price.toFixed(2) }}</span>
+              </div>
+              <div class="item-controls">
+                <button @click="decreaseQuantity(index)" class="quantity-btn">-</button>
+                <span class="quantity">{{ item.quantity }}</span>
+                <button @click="increaseQuantity(index)" class="quantity-btn">+</button>
+                <button @click="removeItem(index)" class="remove-btn">×</button>
+              </div>
+            </div>
+            <div v-if="selectedItems.length === 0" class="empty-cart">
+              <p>No items selected</p>
+            </div>
+          </div>
+          <div class="cart-actions">
+            <button class="clear-btn" @click="clearCart">Clear Cart</button>
+            <button class="checkout-btn" @click="checkout">Checkout</button>
+          </div>
+        </div>
+
+        <!-- Right Side - Item Selector -->
+        <div class="item-selector">
+          <div class="selector-header">
+            <h3>Products</h3>
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Search products..."
+              class="search-input"
+            />
+          </div>
+          <div class="products-grid">
+            <div 
+              v-for="product in filteredProducts" 
+              :key="product.id"
+              @click="addToCart(product)"
+              class="product-card"
+            >
+              <div class="product-image">📦</div>
+              <div class="product-info">
+                <h4>{{ product.name }}</h4>
+                <p class="product-price">${{ product.price.toFixed(2) }}</p>
+                <p class="product-stock">Stock: {{ product.stock }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -58,12 +112,72 @@ export default {
   inject: ['$auth'],
   data() {
     return {
-      isTimelineOpen: false
+      isTimelineOpen: false,
+      selectedItems: [],
+      searchQuery: '',
+      products: [
+        { id: 1, name: 'Glasses Frame A', price: 89.99, stock: 15 },
+        { id: 2, name: 'Glasses Frame B', price: 124.50, stock: 8 },
+        { id: 3, name: 'Contact Lenses', price: 45.00, stock: 25 },
+        { id: 4, name: 'Sunglasses', price: 156.99, stock: 12 },
+        { id: 5, name: 'Reading Glasses', price: 67.50, stock: 18 },
+        { id: 6, name: 'Eye Drops', price: 12.99, stock: 30 },
+        { id: 7, name: 'Lens Cleaner', price: 8.50, stock: 45 },
+        { id: 8, name: 'Prescription Glasses', price: 199.99, stock: 6 }
+      ]
+    }
+  },
+  computed: {
+    totalAmount() {
+      return this.selectedItems.reduce((total, item) => {
+        return total + (item.price * item.quantity);
+      }, 0);
+    },
+    filteredProducts() {
+      if (!this.searchQuery) return this.products;
+      return this.products.filter(product =>
+        product.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
     }
   },
   methods: {
     toggleTimeline() {
       this.isTimelineOpen = !this.isTimelineOpen;
+    },
+    addToCart(product) {
+      const existingItem = this.selectedItems.find(item => item.id === product.id);
+      if (existingItem) {
+        existingItem.quantity++;
+      } else {
+        this.selectedItems.push({
+          ...product,
+          quantity: 1
+        });
+      }
+    },
+    increaseQuantity(index) {
+      this.selectedItems[index].quantity++;
+    },
+    decreaseQuantity(index) {
+      if (this.selectedItems[index].quantity > 1) {
+        this.selectedItems[index].quantity--;
+      } else {
+        this.removeItem(index);
+      }
+    },
+    removeItem(index) {
+      this.selectedItems.splice(index, 1);
+    },
+    clearCart() {
+      this.selectedItems = [];
+    },
+    checkout() {
+      if (this.selectedItems.length === 0) {
+        alert('Please add items to cart first');
+        return;
+      }
+      alert(`Checkout successful! Total: $${this.totalAmount.toFixed(2)}`);
+      this.clearCart();
     }
   }
 }
@@ -220,27 +334,247 @@ export default {
   font-weight: 500;
 }
 
-.pos-header {
-  margin-bottom: 30px;
-}
-
-.pos-header h1 {
-  color: #2c3e50;
-  margin: 0 0 10px;
-  font-size: 2.5em;
-}
-
-.pos-header p {
-  color: #7f8c8d;
-  margin: 0;
-  font-size: 1.2em;
-}
-
 .pos-content {
   background: white;
   border-radius: 12px;
   padding: 40px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  min-height: 400px;
+  min-height: 600px;
+}
+
+/* POS Layout */
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 30px;
+  height: 100%;
+}
+
+/* Selected Items Card */
+.selected-items-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e1e8ed;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.3em;
+}
+
+.total-amount {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #27ae60;
+}
+
+.items-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.selected-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #e1e8ed;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.item-name {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.item-price {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quantity-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e1e8ed;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.quantity-btn:hover {
+  background-color: #f8f9fa;
+}
+
+.quantity {
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
+
+.remove-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: #e74c3c;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.remove-btn:hover {
+  background-color: #c0392b;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.cart-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.clear-btn {
+  flex: 1;
+  padding: 12px;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.clear-btn:hover {
+  background-color: #7f8c8d;
+}
+
+.checkout-btn {
+  flex: 2;
+  padding: 12px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.checkout-btn:hover {
+  background-color: #16a085;
+}
+
+/* Item Selector */
+.item-selector {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e1e8ed;
+}
+
+.selector-header {
+  margin-bottom: 20px;
+}
+
+.selector-header h3 {
+  margin: 0 0 15px;
+  color: #2c3e50;
+  font-size: 1.3em;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #e1e8ed;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.product-image {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.product-info h4 {
+  margin: 0 0 8px;
+  color: #2c3e50;
+  font-size: 1em;
+}
+
+.product-price {
+  margin: 0 0 5px;
+  color: #27ae60;
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+.product-stock {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9em;
 }
 </style>
