@@ -111,7 +111,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #27ae60 0%, #16a085 100%);
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
@@ -149,7 +149,7 @@ export default {
 .logo-icon {
   font-size: 40px;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #27ae60, #16a085);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -210,8 +210,8 @@ export default {
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #27ae60;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
 }
 
 .form-input::placeholder {
@@ -248,8 +248,8 @@ export default {
 }
 
 .checkbox-wrapper input[type="checkbox"]:checked + .checkmark {
-  background: #667eea;
-  border-color: #667eea;
+  background: #27ae60;
+  border-color: #27ae60;
 }
 
 .checkbox-wrapper input[type="checkbox"]:checked + .checkmark::after {
@@ -264,21 +264,21 @@ export default {
 }
 
 .forgot-password {
-  color: #667eea;
+  color: #27ae60;
   text-decoration: none;
   font-size: 0.9em;
   transition: color 0.3s ease;
 }
 
 .forgot-password:hover {
-  color: #764ba2;
+  color: #16a085;
   text-decoration: underline;
 }
 
 .login-btn {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #27ae60, #16a085);
   color: white;
   border: none;
   border-radius: 8px;
@@ -294,7 +294,7 @@ export default {
 
 .login-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 25px rgba(39, 174, 96, 0.3);
 }
 
 .login-btn:disabled {
@@ -329,7 +329,7 @@ export default {
 }
 
 .login-footer a {
-  color: #667eea;
+  color: #27ae60;
   text-decoration: none;
   font-weight: 600;
 }

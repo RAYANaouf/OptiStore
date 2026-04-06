@@ -1,5 +1,11 @@
 <template>
   <div class="pricing-app">
+    <div class="app-nav">
+      <button @click="$router.push('/dashboard')" class="back-btn">
+        ← Back to Dashboard
+      </button>
+    </div>
+    
     <div class="pricing-header">
       <h1>💰 Pricing App</h1>
       <p>Price Management System</p>
@@ -31,6 +37,25 @@ export default {
 <style scoped>
 .pricing-app {
   padding: 30px;
+}
+
+.app-nav {
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  padding: 10px 20px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+  background-color: #16a085;
 }
 
 .pricing-header {

@@ -1,34 +1,14 @@
 <template>
   <div class="app-container">
-    <!-- Sidebar Navigation - Only show when logged in -->
-    <div v-if="$auth.isLoggedIn" class="sidebar">
-      <div class="logo">
-        <h2>OpticStock</h2>
-      </div>
-      <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item">
-          <span class="nav-icon">📊</span>
-          Dashboard
-        </router-link>
-        <router-link to="/pos" class="nav-item">
-          <span class="nav-icon">💳</span>
-          POS App
-        </router-link>
-        <router-link to="/stock" class="nav-item">
-          <span class="nav-icon">📦</span>
-          Stock Level
-        </router-link>
-        <router-link to="/pricing" class="nav-item">
-          <span class="nav-icon">💰</span>
-          Pricing App
-        </router-link>
-      </nav>
-      <div class="logout-section">
+    <!-- Header with logout - Only show when logged in -->
+    <header v-if="$auth.isLoggedIn" class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">OpticStock</h1>
         <button @click="$auth.logout()" class="logout-btn">
           Logout
         </button>
       </div>
-    </div>
+    </header>
     
     <!-- Main Content Area -->
     <div class="main-content">
@@ -46,71 +26,42 @@ export default {
 <style scoped>
 .app-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   font-family: Arial, sans-serif;
   overflow: hidden;
 }
 
-.sidebar {
-  width: 250px;
+.app-header {
   background-color: #2c3e50;
   color: white;
+  padding: 15px 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-content {
   display: flex;
-  flex-direction: column;
-  padding: 20px 0;
-  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100%;
 }
 
-.logo {
-  padding: 0 20px 30px;
-  border-bottom: 1px solid #34495e;
-  margin-bottom: 20px;
-}
-
-.logo h2 {
+.app-title {
   margin: 0;
   color: #3498db;
-}
-
-.nav-menu {
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  padding: 15px 20px;
-  color: white;
-  text-decoration: none;
-  transition: background-color 0.3s;
-}
-
-.nav-item:hover {
-  background-color: #34495e;
-}
-
-.nav-item.router-link-active {
-  background-color: #3498db;
-}
-
-.nav-icon {
-  margin-right: 10px;
-  font-size: 18px;
-}
-
-.logout-section {
-  padding: 20px;
-  border-top: 1px solid #34495e;
+  font-size: 1.8em;
+  font-weight: 600;
 }
 
 .logout-btn {
-  width: 100%;
-  padding: 10px;
+  padding: 8px 16px;
   background-color: #e74c3c;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
 }
 
 .logout-btn:hover {
@@ -121,21 +72,5 @@ export default {
   flex: 1;
   background-color: #f5f5f5;
   overflow-y: auto;
-}
-
-/* Global styles to prevent body scrollbar */
-:global(body) {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-:global(html) {
-  overflow: hidden;
-}
-
-:global(#app) {
-  height: 100vh;
-  overflow: hidden;
 }
 </style>

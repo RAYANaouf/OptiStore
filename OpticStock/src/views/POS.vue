@@ -1,5 +1,11 @@
 <template>
   <div class="pos-app">
+    <div class="app-nav">
+      <button @click="$router.push('/dashboard')" class="back-btn">
+        ← Back to Dashboard
+      </button>
+    </div>
+    
     <div class="pos-header">
       <h1>💳 POS App</h1>
       <p>Point of Sale System</p>
@@ -30,6 +36,25 @@ export default {
 <style scoped>
 .pos-app {
   padding: 30px;
+}
+
+.app-nav {
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  padding: 10px 20px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+  background-color: #16a085;
 }
 
 .pos-header {
