@@ -116,6 +116,7 @@ export default {
       selectedItems: [],
       searchQuery: '',
       products: [],
+      allProducts: [], // Store all products
       loading: false
     }
   },
@@ -126,10 +127,17 @@ export default {
       }, 0);
     },
     filteredProducts() {
-      if (!this.searchQuery) return this.products;
-      return this.products.filter(product =>
-        product.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
+      let products = this.allProducts;
+      
+      // Search through all products
+      if (this.searchQuery) {
+        products = products.filter(product =>
+          product.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      }
+      
+      // Only render first 50 for performance
+      return products.slice(0, 50);
     }
   },
   mounted() {
@@ -142,7 +150,7 @@ export default {
     async fetchProducts() {
       this.loading = true;
       try {
-        // Fetch items from ERPNext backend
+        // Fetch all items from ERPNext backend
         const response = await this.$call('opti_stock.api.get_products', {
           fields: ['name', 'item_name'],
           filters: {
@@ -153,7 +161,8 @@ export default {
         console.log(response);
         
         if (response && response.data) {
-          this.products = response.data.map(item => ({
+          // Store all products for search
+          this.allProducts = response.data.map(item => ({
             id: item.name,
             name: item.item_name || item.name,
             price: 0, // Default price since not fetched
@@ -161,17 +170,17 @@ export default {
             code: item.name
           }));
           
-          // Show info message if items are limited
-          if (response.limited && response.message) {
-            console.log(response.message);
-          }
+          console.log(`Loaded ${this.allProducts.length} products from backend`);
           
-          console.log("Products loaded:", this.products);
+          // Show info if we have more than 50 items
+          if (this.allProducts.length > 50) {
+            console.log(`Showing first 50 of ${this.allProducts.length} total items`);
+          }
         }
       } catch (error) {
         console.error('Error fetching products:', error);
         // Fallback to sample data if API fails
-        this.products = [
+        this.allProducts = [
           { id: 1, name: 'Glasses Frame A', price: 89.99, stock: 15 },
           { id: 2, name: 'Glasses Frame B', price: 124.50, stock: 8 },
           { id: 3, name: 'Contact Lenses', price: 45.00, stock: 25 },

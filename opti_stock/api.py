@@ -3,7 +3,7 @@ from frappe import _
 
 @frappe.whitelist()
 def get_products(fields=None, filters=None):
-    """Get products from ERPNext (limited to 700 for performance)"""
+    """Get all products from ERPNext"""
     try:
         if not fields:
             fields = ['name', 'item_name']
@@ -21,16 +21,13 @@ def get_products(fields=None, filters=None):
             "Item",
             fields   = fields,
             filters  = default_filters,
-            order_by = 'item_name asc',
-            limit    = 700  # Limit to 700 items for performance
+            order_by = 'item_name asc'
         )
         
         return {
             'status': 'success',
             'data': products,
-            'total_count': len(products),
-            'limited': True,
-            'message': f'Showing first {len(products)} items out of available inventory'
+            'total_count': len(products)
         }
     except Exception as e:
         frappe.log_error(f"Error fetching products: {str(e)}")
