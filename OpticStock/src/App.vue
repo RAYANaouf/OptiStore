@@ -48,6 +48,7 @@ export default {
   display: flex;
   height: 100vh;
   font-family: Arial, sans-serif;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -57,6 +58,7 @@ export default {
   display: flex;
   flex-direction: column;
   padding: 20px 0;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -119,5 +121,21 @@ export default {
   flex: 1;
   background-color: #f5f5f5;
   overflow-y: auto;
+}
+
+/* Global styles to prevent body scrollbar */
+:global(body) {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+:global(html) {
+  overflow: hidden;
+}
+
+:global(#app) {
+  height: 100vh;
+  overflow: hidden;
 }
 </style>
