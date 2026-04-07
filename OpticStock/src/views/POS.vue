@@ -29,9 +29,9 @@
     
     <div class="pos-content">
       <div class="pos-layout">
-        <!-- Left Side - Selected Items Card -->
-        <div class="selected-items-card">
-          <!-- Tabs for multiple clients -->
+        <!-- Left Side - Tabs + Selected Items Card -->
+        <div class="left-panel">
+          <!-- Tabs for multiple clients (outside the white card) -->
           <div class="client-tabs">
             <div class="tabs-container">
               <button 
@@ -50,13 +50,14 @@
             <button @click="addClient" class="add-tab-btn">+</button>
           </div>
           
-          <div class="card-header">
+          <!-- Selected Items Card (white background starts here) -->
+          <div class="selected-items-card">
+            <div class="card-header">
             <div class="dropdowns-section">
               <select 
                 v-model="selectedCustomer"
                 class="dropdown-select"
               >
-                <option value="">Walk-in Customer</option>
                 <option v-for="customer in customers" :key="customer.name" :value="customer.name">
                   {{ customer.customer_name }}
                 </option>
@@ -115,8 +116,9 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Right Side - Navigation + Item Selector -->
+      <!-- Right Side - Navigation + Item Selector -->
         <div class="right-panel">
           <!-- Navigation Bar -->
           <div class="pos-nav">
@@ -313,11 +315,13 @@ export default {
     // Tab management methods
     addClient() {
       const newIndex = this.clients.length;
+      // Auto-select first customer if available
+      const firstCustomer = this.customers.length > 0 ? this.customers[0].name : '';
       this.clients.push({
-        name: 'Client ' + (newIndex + 1),
+        name: firstCustomer || 'Client ' + (newIndex + 1),
         items: [],
         selectedIndex: 0,
-        selectedCustomer: '',
+        selectedCustomer: firstCustomer,
         selectedPriceList: ''
       });
       this.activeClientIndex = newIndex;
@@ -385,6 +389,7 @@ export default {
     async fetchPriceLists() {
       try {
         const response = await this.$call('opti_stock.api.get_price_lists');
+        console.log("price list : " ,response);
         if (response && response.data) {
           this.priceLists = response.data;
         }
@@ -458,9 +463,21 @@ export default {
       }
       
       try {
+        // Determine customer - use selected, or first in list
+        let customer = this.selectedCustomer;
+        if (!customer && this.customers.length > 0) {
+          customer = this.customers[0].name;
+          this.selectedCustomer = customer; // Update selection for UI
+        }
+        
+        if (!customer) {
+          alert('No customer available');
+          return;
+        }
+        
         // Create sales invoice in ERPNext
         const response = await this.$call('opti_stock.api.create_sales_invoice', {
-          customer: this.selectedCustomer || 'Walk-in Customer',
+          customer: customer,
           items: this.selectedItems.map(item => ({
             item_code: item.code || item.id,
             qty: item.quantity,
@@ -792,6 +809,14 @@ export default {
   overflow: hidden;
 }
 
+/* Left Panel */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Right Panel */
 .right-panel {
   display: flex;
@@ -804,7 +829,7 @@ export default {
 /* Selected Items Card */
 .selected-items-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 0px 12px  12px 12px;
   border: 1px solid #e1e8ed;
   display: flex;
   flex-direction: column;
@@ -817,9 +842,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 10px 15px 0;
-  border-bottom: 1px solid #e1e8ed;
-  background: #f8f9fa;
+  background: transparent;
+  flex-shrink: 0;
 }
 
 .tabs-container {
@@ -834,22 +858,23 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 15px;
-  background: white;
-  border: 1px solid #e1e8ed;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(225, 232, 237, 0.5);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
   font-size: 14px;
   white-space: nowrap;
   transition: all 0.2s;
+  backdrop-filter: blur(5px);
 }
 
 .client-tab:hover {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .active-tab {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   border-color: #3498db;
   border-bottom: 2px solid #3498db;
   color: #3498db;

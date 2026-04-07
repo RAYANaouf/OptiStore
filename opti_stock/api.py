@@ -113,7 +113,7 @@ def get_price_lists():
         price_lists = frappe.db.get_all(
             "Price List",
             fields=['name', 'price_list_name'],
-            filters={'disabled': 0},
+            filters={'enabled': 1 , 'selling':1},
             order_by='price_list_name asc'
         )
         
