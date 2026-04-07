@@ -1,16 +1,5 @@
 <template>
   <div class="pos-app">
-    <div class="pos-nav">
-      <div class="nav-left">
-        <button @click="toggleTimeline" class="timeline-btn">
-          <span class="timeline-icon">📅</span>
-          Timeline
-        </button>
-        <button @click="$router.push('/dashboard')" class="back-btn">
-          ← Back to Dashboard
-        </button>
-      </div>
-    </div>
     
     <!-- Timeline Sidebar -->
     <div class="timeline-sidebar" :class="{ 'timeline-open': isTimelineOpen }">
@@ -68,11 +57,13 @@
             </div>
           </div>
           <div class="items-list">
-            <div v-for="(item, index) in selectedItems" :key="index" class="selected-item" :class="{ 'active': selectedIndex === index }">
+            <div v-for="(item, index) in selectedItems" :key="index" 
+                 class="selected-item" 
+                 :class="{ 'active': selectedIndex === index }"
+                 @click="selectedIndex = index">
               <span class="item-name">{{ item.name }}</span>
               <span class="item-qty">{{ item.quantity }}</span>
               <span class="item-price">{{ (item.price * item.quantity).toFixed(2) }} DA</span>
-              <span v-if="selectedIndex === index" class="selected-indicator">▼</span>
             </div>
             <div v-if="selectedItems.length === 0" class="empty-cart">
               <p>No items selected</p>
@@ -105,41 +96,58 @@
           </div>
         </div>
 
-        <!-- Right Side - Item Selector -->
-        <div class="item-selector">
-          <div class="selector-header">
-            <div class="search-container">
-              <input 
-                type="text" 
-                v-model="searchQuery" 
-                placeholder="Search products..."
-                class="search-input"
-              />
-              <button 
-                v-if="searchQuery" 
-                @click="clearSearch" 
-                class="clear-search-btn"
-              >
-                ×
+        <!-- Right Side - Navigation + Item Selector -->
+        <div class="right-panel">
+          <!-- Navigation Bar -->
+          <div class="pos-nav">
+            <div class="nav-left">
+              <button @click="toggleTimeline" class="timeline-btn-fixed">
+                →
+              </button>
+            </div>
+            <div class="nav-right">
+              <button @click="$router.push('/dashboard')" class="back-btn">
+                Exit
               </button>
             </div>
           </div>
-          <div v-if="loading" class="loading-state">
-            <p>Loading products...</p>
-          </div>
-          <div v-else class="products-grid">
-            <div 
-              v-for="product in filteredProducts" 
-              :key="product.id"
-              @click="addToCart(product)"
-              class="product-card"
-            >
-              <div class="product-image">👓</div>
-              <div class="product-info">
-                <h4>{{ product.name }}</h4>
-                <p class="product-price">{{ product.price.toFixed(2) }} DA</p>
+          
+          <!-- Item Selector -->
+          <div class="item-selector">
+            <div class="selector-header">
+              <div class="search-container">
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  placeholder="Search products..."
+                  class="search-input"
+                />
+                <button 
+                  v-if="searchQuery" 
+                  @click="clearSearch" 
+                  class="clear-search-btn"
+                >
+                  ×
+                </button>
               </div>
-              <div class="product-stock">{{ product.stock }}</div>
+            </div>
+            <div v-if="loading" class="loading-state">
+              <p>Loading products...</p>
+            </div>
+            <div v-else class="products-grid">
+              <div 
+                v-for="product in filteredProducts" 
+                :key="product.id"
+                @click="addToCart(product)"
+                class="product-card"
+              >
+                <div class="product-image">👓</div>
+                <div class="product-info">
+                  <h4>{{ product.name }}</h4>
+                  <p class="product-price">{{ product.price.toFixed(2) }} DA</p>
+                </div>
+                <div class="product-stock">{{ product.stock }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -389,13 +397,132 @@ export default {
 .pos-app {
   padding: 30px;
   min-height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(39, 174, 96, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(39, 174, 96, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(39, 174, 96, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 10% 80%, rgba(39, 174, 96, 0.08) 0%, transparent 35%),
+    radial-gradient(circle at 90% 20%, rgba(39, 174, 96, 0.12) 0%, transparent 45%),
+    linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+  position: relative;
+}
+
+.pos-content{
+  position: relative;
+  z-index: 1;
+}
+
+.pos-nav{
+  position: relative;
+  z-index: 1;
+}
+
+.pos-app::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    /* Large flowing waves */
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(39, 174, 96, 0.4) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 20% 0%, rgba(39, 174, 96, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 35% at 80% 50%, rgba(39, 174, 96, 0.25) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 25% at 30% 80%, rgba(39, 174, 96, 0.35) 0%, transparent 55%),
+    /* Stars - many more added */
+    radial-gradient(circle at 5% 10%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 15% 5%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 25% 15%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 35% 8%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 45% 20%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 55% 5%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 65% 18%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 75% 12%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 85% 25%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 95% 8%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 10% 30%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 20% 45%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 30% 35%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 40% 50%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 50% 40%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 60% 55%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 70% 45%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 80% 60%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 90% 50%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 5% 70%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 15% 85%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 25% 75%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 35% 90%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 45% 80%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 55% 95%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 65% 85%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 75% 95%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 85% 75%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 95% 90%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 12% 55%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 28% 65%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 42% 70%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 58% 75%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 72% 30%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 88% 40%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 8% 95%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px),
+    radial-gradient(circle at 38% 25%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 68% 78%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 4px, transparent 8px),
+    radial-gradient(circle at 92% 65%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 3px, transparent 6px),
+    radial-gradient(circle at 48% 92%, rgba(39, 174, 96, 1) 0%, rgba(39, 174, 96, 0.3) 5px, transparent 10px);
+  pointer-events: none;
+  z-index: 0;
+  animation: galaxyPulse 4s ease-in-out infinite;
+}
+
+.pos-app::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    /* Additional wave layers for depth */
+    radial-gradient(ellipse 100% 50% at 0% 50%, rgba(39, 174, 96, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 50% at 100% 30%, rgba(39, 174, 96, 0.12) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+  animation: waveFlow 10s ease-in-out infinite;
+  filter: blur(20px);
+}
+
+@keyframes galaxyPulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes waveFlow {
+  0%, 100% { 
+    transform: translateX(-30px) scale(1);
+    opacity: 0.6;
+  }
+  33% { 
+    transform: translateX(20px) scale(1.1);
+    opacity: 0.9;
+  }
+  66% { 
+    transform: translateX(-10px) scale(0.95);
+    opacity: 0.7;
+  }
 }
 
 .pos-nav {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
 }
 
 .nav-left {
@@ -404,41 +531,49 @@ export default {
   align-items: center;
 }
 
-.timeline-btn {
-  padding: 10px 16px;
-  background-color: #3498db;
+.nav-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.timeline-btn-fixed {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 40px;
+  background: #3498db;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
+  font-size: 18px;
+  z-index: 999;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: background-color 0.3s;
 }
 
-.timeline-btn:hover {
-  background-color: #2980b9;
-}
-
-.timeline-icon {
-  font-size: 16px;
+.timeline-btn-fixed:hover {
+  background: #2980b9;
 }
 
 .back-btn {
-  padding: 10px 20px;
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
+  padding: 15px 15px;
+  background-color: white;
+  color: #27ae60;
+  border: 1px solid #27ae60;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s;
 }
 
 .back-btn:hover {
-  background-color: #16a085;
+  background-color: #f0f0f0;
 }
 
 /* Timeline Sidebar */
@@ -526,14 +661,23 @@ export default {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
-  height: calc(100vh - 80px); /* Increased bottom space */
-  padding: 20px 20px 30px 20px; /* Added bottom padding */
+  height: calc(100vh - 40px);
+  padding: 10px 20px 20px 20px;
+  overflow: hidden;
+}
+
+/* Right Panel */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  height: 100%;
   overflow: hidden;
 }
 
 /* Selected Items Card */
 .selected-items-card {
-  background: #f8f9fa;
+  background: white;
   border-radius: 12px;
   border: 1px solid #e1e8ed;
   display: flex;
@@ -597,6 +741,13 @@ export default {
   background: white;
   transition: all 0.3s ease;
   gap: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.selected-item:hover {
+  background: #f0f9f6;
+  border-color: #27ae60;
 }
 
 .selected-item.active {
@@ -809,7 +960,7 @@ export default {
 
 /* Item Selector */
 .item-selector {
-  background: #f8f9fa;
+  background: white;
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e1e8ed;
