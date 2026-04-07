@@ -31,6 +31,25 @@
       <div class="pos-layout">
         <!-- Left Side - Selected Items Card -->
         <div class="selected-items-card">
+          <!-- Tabs for multiple clients -->
+          <div class="client-tabs">
+            <div class="tabs-container">
+              <button 
+                v-for="(client, index) in clients" 
+                :key="index"
+                @click="switchClient(index)"
+                class="client-tab"
+                :class="{ 'active-tab': activeClientIndex === index }"
+              >
+                <span class="tab-name">{{ client.name || 'Client ' + (index + 1) }}</span>
+                <span v-if="clients.length > 1" 
+                      @click.stop="removeClient(index)" 
+                      class="tab-close">×</span>
+              </button>
+            </div>
+            <button @click="addClient" class="add-tab-btn">+</button>
+          </div>
+          
           <div class="card-header">
             <div class="dropdowns-section">
               <select 
@@ -52,9 +71,6 @@
                 </option>
               </select>
             </div>
-            <div class="total-amount">
-              Total: {{ totalAmount.toFixed(2) }} DA
-            </div>
           </div>
           <div class="items-list">
             <div v-for="(item, index) in selectedItems" :key="index" 
@@ -63,7 +79,7 @@
                  @click="selectedIndex = index">
               <span class="item-name">{{ item.name }}</span>
               <span class="item-qty">{{ item.quantity }}</span>
-              <span class="item-price">{{ (item.price * item.quantity).toFixed(2) }} DA</span>
+              <span class="item-price">{{ item.price.toFixed(0) }} DA</span>
             </div>
             <div v-if="selectedItems.length === 0" class="empty-cart">
               <p>No items selected</p>
@@ -74,16 +90,20 @@
               <button @click="addNumber('1')" class="keyboard-btn num-btn">1</button>
               <button @click="addNumber('2')" class="keyboard-btn num-btn">2</button>
               <button @click="addNumber('3')" class="keyboard-btn num-btn">3</button>
-              <button  class="keyboard-btn ">Qty</button>
+              <button @click="setInputMode('qty')" 
+                      class="keyboard-btn mode-btn" 
+                      :class="{ 'active-mode': inputMode === 'qty' }">Qty</button>
               
               <button @click="addNumber('4')" class="keyboard-btn num-btn">4</button>
               <button @click="addNumber('5')" class="keyboard-btn num-btn">5</button>
               <button @click="addNumber('6')" class="keyboard-btn num-btn">6</button>
-              <button  class="keyboard-btn ">Price</button>
+              <button @click="setInputMode('price')" 
+                      class="keyboard-btn mode-btn" 
+                      :class="{ 'active-mode': inputMode === 'price' }">Price</button>
 
-              <button @click="addNumber('7')" class="keyboard-btn num-btn">1</button>
-              <button @click="addNumber('8')" class="keyboard-btn num-btn">2</button>
-              <button @click="addNumber('9')" class="keyboard-btn num-btn">3</button>
+              <button @click="addNumber('7')" class="keyboard-btn num-btn">7</button>
+              <button @click="addNumber('8')" class="keyboard-btn num-btn">8</button>
+              <button @click="addNumber('9')" class="keyboard-btn num-btn">9</button>
               <button  class="keyboard-btn ">-</button>
 
               <button class="keyboard-btn empty-btn">.</button>
@@ -144,7 +164,7 @@
                 <div class="product-image">👓</div>
                 <div class="product-info">
                   <h4>{{ product.name }}</h4>
-                  <p class="product-price">{{ product.price.toFixed(2) }} DA</p>
+                  <p class="product-price">{{ product.price.toFixed(0) }} DA</p>
                 </div>
                 <div class="product-stock">{{ product.stock }}</div>
               </div>
@@ -163,20 +183,52 @@ export default {
   data() {
     return {
       isTimelineOpen: false,
-      selectedItems: [],
+      // Multiple clients support
+      clients: [
+        { name: '', items: [], selectedIndex: 0, selectedCustomer: '', selectedPriceList: '' }
+      ],
+      activeClientIndex: 0,
+      // Current client getters (computed from active client)
       searchQuery: '',
       products: [],
-      allProducts: [], // Store all products
+      allProducts: [],
       loading: false,
-      selectedCustomer: '',
       customers: [],
-      selectedPriceList: '',
       priceLists: [],
-      selectedIndex: 0,
-      numberInput: ''
+      numberInput: '',
+      inputMode: 'qty'
     }
   },
   computed: {
+    // Current client data (computed from active client)
+    selectedItems() {
+      return this.clients[this.activeClientIndex]?.items || [];
+    },
+    selectedIndex: {
+      get() {
+        return this.clients[this.activeClientIndex]?.selectedIndex || 0;
+      },
+      set(value) {
+        this.clients[this.activeClientIndex].selectedIndex = value;
+      }
+    },
+    selectedCustomer: {
+      get() {
+        return this.clients[this.activeClientIndex]?.selectedCustomer || '';
+      },
+      set(value) {
+        this.clients[this.activeClientIndex].selectedCustomer = value;
+        this.clients[this.activeClientIndex].name = value || 'Client ' + (this.activeClientIndex + 1);
+      }
+    },
+    selectedPriceList: {
+      get() {
+        return this.clients[this.activeClientIndex]?.selectedPriceList || '';
+      },
+      set(value) {
+        this.clients[this.activeClientIndex].selectedPriceList = value;
+      }
+    },
     totalAmount() {
       return this.selectedItems.reduce((total, item) => {
         return total + (item.price * item.quantity);
@@ -200,10 +252,31 @@ export default {
     this.fetchProducts();
     this.fetchCustomers();
     this.fetchPriceLists();
+    // Add keyboard shortcut listener
+    window.addEventListener('keydown', this.handleKeyboardShortcut);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeyboardShortcut);
   },
   methods: {
     toggleTimeline() {
       this.isTimelineOpen = !this.isTimelineOpen;
+    },
+    setInputMode(mode) {
+      this.inputMode = mode;
+    },
+    handleKeyboardShortcut(event) {
+      // Ignore if typing in an input field
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      const key = event.key.toLowerCase();
+      if (key === 'q') {
+        this.setInputMode('qty');
+      } else if (key === 'p') {
+        this.setInputMode('price');
+      }
     },
     clearSearch() {
       this.searchQuery = '';
@@ -237,9 +310,64 @@ export default {
         }
       }
     },
+    // Tab management methods
+    addClient() {
+      const newIndex = this.clients.length;
+      this.clients.push({
+        name: 'Client ' + (newIndex + 1),
+        items: [],
+        selectedIndex: 0,
+        selectedCustomer: '',
+        selectedPriceList: ''
+      });
+      this.activeClientIndex = newIndex;
+    },
+    removeClient(index) {
+      if (this.clients.length <= 1) {
+        return; // Keep at least one client
+      }
+      this.clients.splice(index, 1);
+      if (this.activeClientIndex >= this.clients.length) {
+        this.activeClientIndex = this.clients.length - 1;
+      }
+    },
+    switchClient(index) {
+      this.activeClientIndex = index;
+    },
+    clearCart() {
+      this.clients[this.activeClientIndex].items = [];
+      this.clients[this.activeClientIndex].selectedIndex = 0;
+    },
     // Number input methods
     addNumber(num) {
-      this.numberInput += num;
+      if (this.selectedItems.length === 0 || this.selectedIndex >= this.selectedItems.length) {
+        return;
+      }
+      
+      const item = this.selectedItems[this.selectedIndex];
+      const currentValue = this.inputMode === 'qty' ? item.quantity.toString() : item.price.toString();
+      const newValue = currentValue + num;
+      
+      if (this.inputMode === 'qty') {
+        item.quantity = parseInt(newValue) || 1;
+      } else {
+        item.price = parseFloat(newValue) || 0;
+      }
+    },
+    deleteLastNumber() {
+      if (this.selectedItems.length === 0 || this.selectedIndex >= this.selectedItems.length) {
+        return;
+      }
+      
+      const item = this.selectedItems[this.selectedIndex];
+      
+      if (this.inputMode === 'qty') {
+        const qtyStr = item.quantity.toString();
+        item.quantity = qtyStr.length > 1 ? parseInt(qtyStr.slice(0, -1)) : 1;
+      } else {
+        const priceStr = item.price.toString();
+        item.price = priceStr.length > 1 ? parseFloat(priceStr.slice(0, -1)) : 0;
+      }
     },
     clearNumberInput() {
       this.numberInput = '';
@@ -312,18 +440,16 @@ export default {
       }
     },
     addToCart(product) {
-      const existingItem = this.selectedItems.find(item => item.id === product.id);
+      const items = this.clients[this.activeClientIndex].items;
+      const existingItem = items.find(item => item.id === product.id);
       if (existingItem) {
         existingItem.quantity++;
       } else {
-        this.selectedItems.push({
+        items.push({
           ...product,
           quantity: 1
         });
       }
-    },
-    clearCart() {
-      this.selectedItems = [];
     },
     async checkout() {
       if (this.selectedItems.length === 0) {
@@ -348,7 +474,7 @@ export default {
         }
       } catch (error) {
         console.error('Error creating sales invoice:', error);
-        alert(`Checkout successful! Total: ${this.totalAmount.toFixed(2)} DA`);
+        alert(`Checkout successful! Total: ${this.totalAmount.toFixed(0)} DA`);
         this.clearCart();
       }
     },
@@ -366,13 +492,13 @@ export default {
           ${this.selectedItems.map(item => `
             <div style="display: flex; justify-content: space-between; margin: 10px 0;">
               <span>${item.name} x${item.quantity}</span>
-              <span>${(item.price * item.quantity).toFixed(2)} DA</span>
+              <span>${(item.price * item.quantity).toFixed(0)} DA</span>
             </div>
           `).join('')}
           <hr>
           <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px;">
             <span>Total:</span>
-            <span>${this.totalAmount.toFixed(2)} DA</span>
+            <span>${this.totalAmount.toFixed(0)} DA</span>
           </div>
           <p style="text-align: center; margin-top: 20px;">Thank you!</p>
         </div>
@@ -686,6 +812,92 @@ export default {
   overflow: hidden;
 }
 
+/* Client Tabs */
+.client-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 15px 0;
+  border-bottom: 1px solid #e1e8ed;
+  background: #f8f9fa;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.client-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.client-tab:hover {
+  background: #f0f0f0;
+}
+
+.active-tab {
+  background: white;
+  border-color: #3498db;
+  border-bottom: 2px solid #3498db;
+  color: #3498db;
+  font-weight: 600;
+}
+
+.tab-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 14px;
+  color: #999;
+  transition: all 0.2s;
+}
+
+.tab-close:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.add-tab-btn {
+  width: 30px;
+  height: 30px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.add-tab-btn:hover {
+  background: #229954;
+}
+
 .card-header {
   display: flex;
   flex-direction: column;
@@ -764,12 +976,16 @@ export default {
 .item-qty {
   color: #7f8c8d;
   font-size: 0.9em;
+  width: 50px;
+  text-align: center;
 }
 
 .item-price {
   color: #2c3e50;
   font-weight: 600;
   font-size: 0.9em;
+  width: 100px;
+  text-align: right;
 }
 
 .selected-indicator {
@@ -890,6 +1106,24 @@ export default {
 
 .empty-btn:hover {
   background: white;
+}
+
+.mode-btn {
+  background: white;
+  color: #2c3e50;
+  border-color: #e5e7eb;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  background: #f5f5f5;
+  border-color: #3498db;
+}
+
+.active-mode {
+  background: #3498db !important;
+  color: white !important;
+  border-color: #3498db !important;
 }
 
 .action-btn {
