@@ -103,6 +103,8 @@
               <button @click="addNumber('0')" class="keyboard-btn num-btn ">0</button>
               <button class="keyboard-btn empty-btn" @click="deleteLastNumber">Delete</button>
               <button class="keyboard-btn empty-btn" @click="removeSelectedItem">Remove</button>
+              <button @click="checkout" class="keyboard-btn action-btn complete-btn">Complete</button>
+              <button @click="printReceipt" class="keyboard-btn action-btn print-btn">Print</button>
             </div>
           </div>
         </div>
@@ -345,6 +347,43 @@ export default {
         alert(`Checkout successful! Total: ${this.totalAmount.toFixed(2)} DA`);
         this.clearCart();
       }
+    },
+    printReceipt() {
+      if (this.selectedItems.length === 0) {
+        alert('No items to print');
+        return;
+      }
+      
+      // Generate receipt content
+      const receiptContent = `
+        <div style="font-family: monospace; padding: 20px; max-width: 300px;">
+          <h2 style="text-align: center;">Receipt</h2>
+          <hr>
+          ${this.selectedItems.map(item => `
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span>${item.name} x${item.quantity}</span>
+              <span>${(item.price * item.quantity).toFixed(2)} DA</span>
+            </div>
+          `).join('')}
+          <hr>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px;">
+            <span>Total:</span>
+            <span>${this.totalAmount.toFixed(2)} DA</span>
+          </div>
+          <p style="text-align: center; margin-top: 20px;">Thank you!</p>
+        </div>
+      `;
+      
+      // Open print window
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head><title>Receipt</title></head>
+          <body>${receiptContent}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
     }
   }
 }
@@ -615,7 +654,7 @@ export default {
 
 .keyboard-btn {
   background: white;
-  border: 2px solid #2c3e50;
+  border: 1px solid #e5e7eb;
   border-radius: 0;
   padding: 15px;
   font-size: 16px;
@@ -623,6 +662,7 @@ export default {
   cursor: pointer;
   transition: background-color 0.2s;
   min-width: 60px;
+  color: #2c3e50;
 }
 
 .keyboard-btn:hover {
@@ -670,48 +710,73 @@ export default {
 }
 
 .num-btn {
-  background: #6c757d;
-  color: white;
-  border-color: #6c757d;
+  background: white;
+  color: #2c3e50;
+  border-color: #e5e7eb;
 }
 
 .num-btn:hover {
-  background: #5a6268;
-  border-color: #5a6268;
+  background: #f5f5f5;
+  border-color: #e5e7eb;
 }
 
 .clear-btn {
-  background: #ffc107;
-  color: #212529;
-  border-color: #ffc107;
+  background: white;
+  color: #2c3e50;
+  border-color: #e5e7eb;
 }
 
 .clear-btn:hover {
-  background: #e0a800;
-  border-color: #e0a800;
+  background: #f5f5f5;
+  border-color: #e5e7eb;
 }
 
 .apply-btn {
-  background: #17a2b8;
-  color: white;
-  border-color: #17a2b8;
+  background: white;
+  color: #2c3e50;
+  border-color: #e5e7eb;
 }
 
 .apply-btn:hover {
-  background: #138496;
-  border-color: #138496;
+  background: #f5f5f5;
+  border-color: #e5e7eb;
 }
 
 .empty-btn {
-  background: transparent;
-  border: 1px solid #dee2e6;
+  background: white;
+  border: 1px solid #e5e7eb;
   cursor: default;
 }
 
 .empty-btn:hover {
-  background: transparent;
-  transform: none;
-  box-shadow: none;
+  background: white;
+}
+
+.action-btn {
+  grid-column: span 2;
+  font-weight: bold;
+}
+
+.complete-btn {
+  background: #27ae60;
+  color: white;
+  border-color: #27ae60;
+}
+
+.complete-btn:hover {
+  background: #229954;
+  border-color: #229954;
+}
+
+.print-btn {
+  background: #E1472B;
+  color: white;
+  border-color: #E1472B;
+}
+
+.print-btn:hover {
+  background: #c73d24;
+  border-color: #c73d24;
 }
 
 
