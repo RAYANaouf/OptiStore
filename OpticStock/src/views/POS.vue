@@ -43,40 +43,67 @@
         <!-- Left Side - Selected Items Card -->
         <div class="selected-items-card">
           <div class="card-header">
-            <div class="customer-section">
-              <label for="customer-select">Customer:</label>
+            <div class="dropdowns-section">
               <select 
-                id="customer-select"
                 v-model="selectedCustomer"
-                class="customer-select"
+                class="dropdown-select"
               >
                 <option value="">Walk-in Customer</option>
                 <option v-for="customer in customers" :key="customer.name" :value="customer.name">
                   {{ customer.customer_name }}
                 </option>
               </select>
+              <select 
+                v-model="selectedPriceList"
+                class="dropdown-select"
+              >
+                <option value="">Standard Price</option>
+                <option v-for="priceList in priceLists" :key="priceList.name" :value="priceList.name">
+                  {{ priceList.price_list_name }}
+                </option>
+              </select>
             </div>
             <div class="total-amount">
-              Total: ${{ totalAmount.toFixed(2) }}
+              Total: {{ totalAmount.toFixed(2) }} DA
             </div>
           </div>
           <div class="items-list">
-            <div v-for="(item, index) in selectedItems" :key="index" class="selected-item">
+            <div v-for="(item, index) in selectedItems" :key="index" class="selected-item" :class="{ 'active': selectedIndex === index }">
               <div class="item-info">
                 <span class="item-name">{{ item.name }}</span>
-                <span class="item-price">${{ item.price.toFixed(2) }}</span>
+                <span class="item-price">{{ item.price.toFixed(2) }} DA</span>
               </div>
               <div class="item-controls">
                 <span class="quantity">Qty: {{ item.quantity }}</span>
+                <span v-if="selectedIndex === index" class="selected-indicator">▼</span>
               </div>
             </div>
             <div v-if="selectedItems.length === 0" class="empty-cart">
               <p>No items selected</p>
             </div>
           </div>
-          <div class="cart-actions">
-            <button class="clear-btn" @click="clearCart">Clear Cart</button>
-            <button class="checkout-btn" @click="checkout">Checkout</button>
+          <div class="onscreen-keyboard">
+            <div class="calculator-grid">
+              <button @click="addNumber('1')" class="keyboard-btn num-btn">1</button>
+              <button @click="addNumber('2')" class="keyboard-btn num-btn">2</button>
+              <button @click="addNumber('3')" class="keyboard-btn num-btn">3</button>
+              <button  class="keyboard-btn ">Qty</button>
+              
+              <button @click="addNumber('4')" class="keyboard-btn num-btn">4</button>
+              <button @click="addNumber('5')" class="keyboard-btn num-btn">5</button>
+              <button @click="addNumber('6')" class="keyboard-btn num-btn">6</button>
+              <button  class="keyboard-btn ">Price</button>
+
+              <button @click="addNumber('7')" class="keyboard-btn num-btn">1</button>
+              <button @click="addNumber('8')" class="keyboard-btn num-btn">2</button>
+              <button @click="addNumber('9')" class="keyboard-btn num-btn">3</button>
+              <button  class="keyboard-btn ">-</button>
+
+              <button class="keyboard-btn empty-btn">.</button>
+              <button @click="addNumber('0')" class="keyboard-btn num-btn ">0</button>
+              <button class="keyboard-btn empty-btn" @click="deleteLastNumber">Delete</button>
+              <button class="keyboard-btn empty-btn" @click="removeSelectedItem">Remove</button>
+            </div>
           </div>
         </div>
 
@@ -109,12 +136,12 @@
               @click="addToCart(product)"
               class="product-card"
             >
-              <div class="product-image">📦</div>
+              <div class="product-image">👓</div>
               <div class="product-info">
                 <h4>{{ product.name }}</h4>
-                <p class="product-price">${{ product.price.toFixed(2) }}</p>
-                <p class="product-stock">Stock: {{ product.stock }}</p>
+                <p class="product-price">{{ product.price.toFixed(2) }} DA</p>
               </div>
+              <div class="product-stock">{{ product.stock }}</div>
             </div>
           </div>
         </div>
@@ -136,7 +163,11 @@ export default {
       allProducts: [], // Store all products
       loading: false,
       selectedCustomer: '',
-      customers: []
+      customers: [],
+      selectedPriceList: '',
+      priceLists: [],
+      selectedIndex: 0,
+      numberInput: ''
     }
   },
   computed: {
@@ -162,6 +193,7 @@ export default {
   mounted() {
     this.fetchProducts();
     this.fetchCustomers();
+    this.fetchPriceLists();
   },
   methods: {
     toggleTimeline() {
@@ -169,6 +201,42 @@ export default {
     },
     clearSearch() {
       this.searchQuery = '';
+    },
+    // On-screen keyboard methods
+    navigateUp() {
+      if (this.selectedItems.length > 0) {
+        this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      }
+    },
+    navigateDown() {
+      if (this.selectedItems.length > 0) {
+        this.selectedIndex = Math.min(this.selectedItems.length - 1, this.selectedIndex + 1);
+      }
+    },
+    increaseSelectedQuantity() {
+      if (this.selectedItems[this.selectedIndex]) {
+        this.selectedItems[this.selectedIndex].quantity++;
+      }
+    },
+    decreaseSelectedQuantity() {
+      if (this.selectedItems[this.selectedIndex] && this.selectedItems[this.selectedIndex].quantity > 1) {
+        this.selectedItems[this.selectedIndex].quantity--;
+      }
+    },
+    removeSelectedItem() {
+      if (this.selectedItems.length > 0) {
+        this.selectedItems.splice(this.selectedIndex, 1);
+        if (this.selectedIndex >= this.selectedItems.length && this.selectedIndex > 0) {
+          this.selectedIndex--;
+        }
+      }
+    },
+    // Number input methods
+    addNumber(num) {
+      this.numberInput += num;
+    },
+    clearNumberInput() {
+      this.numberInput = '';
     },
     async fetchCustomers() {
       try {
@@ -178,6 +246,16 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching customers:', error);
+      }
+    },
+    async fetchPriceLists() {
+      try {
+        const response = await this.$call('opti_stock.api.get_price_lists');
+        if (response && response.data) {
+          this.priceLists = response.data;
+        }
+      } catch (error) {
+        console.error('Error fetching price lists:', error);
       }
     },
     async fetchProducts() {
@@ -264,7 +342,7 @@ export default {
         }
       } catch (error) {
         console.error('Error creating sales invoice:', error);
-        alert(`Checkout successful! Total: $${this.totalAmount.toFixed(2)}`);
+        alert(`Checkout successful! Total: ${this.totalAmount.toFixed(2)} DA`);
         this.clearCart();
       }
     }
@@ -422,7 +500,6 @@ export default {
 .selected-items-card {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 20px;
   border: 1px solid #e1e8ed;
   display: flex;
   flex-direction: column;
@@ -445,20 +522,13 @@ export default {
   font-size: 1.3em;
 }
 
-.customer-section {
+.dropdowns-section {
   display: flex;
-  align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
 }
 
-.customer-section label {
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 14px;
-  min-width: 80px;
-}
-
-.customer-select {
+.dropdown-select {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #e1e8ed;
@@ -468,7 +538,7 @@ export default {
   transition: border-color 0.3s;
 }
 
-.customer-select:focus {
+.dropdown-select:focus {
   outline: none;
   border-color: #3498db;
 }
@@ -482,7 +552,6 @@ export default {
 .items-list {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 20px;
 }
 
 .selected-item {
@@ -494,6 +563,12 @@ export default {
   border-radius: 8px;
   margin-bottom: 10px;
   border: 1px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.selected-item.active {
+  border-color: #44A292;
+  box-shadow: 0 0 0 2px rgba(68, 162, 146, 0.2);
 }
 
 .item-info {
@@ -517,6 +592,128 @@ export default {
   align-items: center;
   gap: 10px;
 }
+
+.selected-indicator {
+  color: #44A292;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.onscreen-keyboard {
+  background: #f8f9fa;
+  border-radius: 0;
+  border: 1px solid #e1e8ed;
+}
+
+
+.calculator-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  width: 100%;
+}
+
+.keyboard-btn {
+  background: white;
+  border: 2px solid #2c3e50;
+  border-radius: 0;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 60px;
+}
+
+.keyboard-btn:hover {
+  background: #f5f5f5;
+}
+
+.keyboard-btn:active {
+  background: #e0e0e0;
+}
+
+.nav-btn {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.nav-btn:hover {
+  background: #2980b9;
+  border-color: #2980b9;
+}
+
+
+.remove-btn {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+.remove-btn:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+
+
+.keyboard-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.keyboard-btn:disabled:hover {
+  background: white;
+  transform: none;
+  box-shadow: none;
+}
+
+.num-btn {
+  background: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+.num-btn:hover {
+  background: #5a6268;
+  border-color: #5a6268;
+}
+
+.clear-btn {
+  background: #ffc107;
+  color: #212529;
+  border-color: #ffc107;
+}
+
+.clear-btn:hover {
+  background: #e0a800;
+  border-color: #e0a800;
+}
+
+.apply-btn {
+  background: #17a2b8;
+  color: white;
+  border-color: #17a2b8;
+}
+
+.apply-btn:hover {
+  background: #138496;
+  border-color: #138496;
+}
+
+.empty-btn {
+  background: transparent;
+  border: 1px solid #dee2e6;
+  cursor: default;
+}
+
+.empty-btn:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
 
 .quantity {
   font-weight: 500;
@@ -552,22 +749,9 @@ export default {
   background-color: #7f8c8d;
 }
 
-.checkout-btn {
-  flex: 2;
-  padding: 12px;
-  background: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
 
-.checkout-btn:hover {
-  background-color: #16a085;
-}
+
+
 
 /* Item Selector */
 .item-selector {
@@ -637,19 +821,22 @@ export default {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  flex: 1;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
   overflow-y: auto;
+  max-height: 100%;
+  align-content: start;
 }
 
 .product-card {
   background: white;
   border-radius: 8px;
-  padding: 15px;
+  padding: 12px;
   border: 1px solid #e1e8ed;
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
 }
 
 .product-card:hover {
@@ -658,9 +845,9 @@ export default {
 }
 
 .product-image {
-  font-size: 48px;
+  font-size: 36px;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .product-info h4 {
@@ -671,14 +858,29 @@ export default {
 
 .product-price {
   margin: 0 0 5px;
-  color: #27ae60;
-  font-weight: 500;
-  font-size: 1.1em;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9em;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #44A292;
+  padding: 2px 6px;
+  border-bottom-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 .product-stock {
   margin: 0;
-  color: #7f8c8d;
+  color: white;
+  font-weight: bold;
   font-size: 0.9em;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #3498db;
+  padding: 2px 6px;
+  border-top-left-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 </style>

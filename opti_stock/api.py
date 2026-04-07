@@ -107,6 +107,28 @@ def get_stock_levels():
         }
 
 @frappe.whitelist()
+def get_price_lists():
+    """Get price lists from ERPNext"""
+    try:
+        price_lists = frappe.db.get_all(
+            "Price List",
+            fields=['name', 'price_list_name'],
+            filters={'disabled': 0},
+            order_by='price_list_name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': price_lists
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching price lists: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@frappe.whitelist()
 def get_customers():
     """Get customers from ERPNext"""
     try:
