@@ -126,6 +126,17 @@
               <button @click="toggleTimeline" class="timeline-btn-fixed">
                 →
               </button>
+              <span v-if="posProfile" class="pos-profile-display">
+                <span class="profile-icon"></span>
+                <span class="profile-info">
+                  <span class="profile-name">{{ posProfile.name }}</span>
+                  <span v-if="posProfile.periodStart" class="profile-time">| {{ posProfile.periodStart }}</span>
+                </span>
+              </span>
+              <span v-else class="pos-profile-display pos-profile-none">
+                <span class="profile-icon"></span>
+                <span class="profile-name">No Profile</span>
+              </span>
             </div>
             <div class="nav-right">
               <button @click="$router.push('/dashboard')" class="back-btn">
@@ -198,7 +209,8 @@ export default {
       customers: [],
       priceLists: [],
       numberInput: '',
-      inputMode: 'qty'
+      inputMode: 'qty',
+      posProfile: null
     }
   },
   computed: {
@@ -251,9 +263,11 @@ export default {
     }
   },
   mounted() {
+    this.checkPOSOpeningEntry();
     this.fetchProducts();
     this.fetchCustomers();
     this.fetchPriceLists();
+    this.fetchPOSProfile();
     // Add keyboard shortcut listener
     window.addEventListener('keydown', this.handleKeyboardShortcut);
   },
@@ -274,10 +288,24 @@ export default {
       }
       
       const key = event.key.toLowerCase();
+      
+      // Mode switching shortcuts
       if (key === 'q') {
         this.setInputMode('qty');
+        event.preventDefault();
       } else if (key === 'p') {
         this.setInputMode('price');
+        event.preventDefault();
+      }
+      // Number keys (0-9)
+      else if (/^[0-9]$/.test(event.key)) {
+        this.addNumber(event.key);
+        event.preventDefault();
+      }
+      // Delete/Backspace key
+      else if (key === 'backspace' || key === 'delete') {
+        this.deleteLastNumber();
+        event.preventDefault();
       }
     },
     clearSearch() {
@@ -395,6 +423,36 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching price lists:', error);
+      }
+    },
+    async fetchPOSProfile() {
+      try {
+        const response = await this.$call('opti_stock.api.get_pos_profile');
+        if (response && response.data) {
+          this.posProfile = response.data;
+        }
+      } catch (error) {
+        console.error('Error fetching POS profile:', error);
+      }
+    },
+    async checkPOSOpeningEntry() {
+      try {
+        const response = await this.$call('opti_stock.api.check_pos_opening_entry');
+        if (response && !response.has_open_entry) {
+          alert('No open POS Opening Entry found. Please create a POS Opening Entry first.');
+          // Redirect to POS Opening Entry page
+          window.location.href = '/app/pos-opening-entry';
+          return;
+        }
+        // Set POS Profile from Opening Entry
+        if (response && response.pos_profile) {
+          this.posProfile = {
+            ...response.pos_profile,
+            periodStart: response.opening_entry?.period_start_date
+          };
+        }
+      } catch (error) {
+        console.error('Error checking POS opening entry:', error);
       }
     },
     async fetchProducts() {
@@ -674,6 +732,37 @@ export default {
   align-items: center;
 }
 
+.pos-profile-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.profile-icon {
+  width: 50px;
+  aspect-ratio: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233498db'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-time {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.pos-profile-none .profile-name {
+  color: #e74c3c;
+}
+
 .nav-right {
   display: flex;
   gap: 8px;
@@ -684,8 +773,8 @@ export default {
   position: relative;
   top: 0;
   left: 0;
-  width: 30px;
-  height: 40px;
+  width: 50px;
+  aspect-ratio: 1;
   background: #3498db;
   color: white;
   border: none;
@@ -705,7 +794,8 @@ export default {
 }
 
 .back-btn {
-  padding: 15px 15px;
+  width: 50px;
+  aspect-ratio: 1;
   background-color: white;
   color: #27ae60;
   border: 1px solid #27ae60;

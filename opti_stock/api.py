@@ -172,3 +172,78 @@ def get_sales_history(limit=50):
             'status': 'error',
             'message': str(e)
         }
+
+@frappe.whitelist()
+def get_pos_profile():
+    """Get the POS Profile assigned to current user"""
+    try:
+        # Get POS Profile for current user
+        pos_profile = frappe.db.get_value(
+            "POS Profile",
+            {"user": frappe.session.user, "disabled": 0},
+            ["name", "warehouse", "selling_price_list", "company"],
+            as_dict=True
+        )
+        
+        # If no user-specific profile, get any available one
+        if not pos_profile:
+            pos_profile = frappe.db.get_all(
+                "POS Profile",
+                fields=["name", "warehouse", "selling_price_list", "company"],
+                filters={"disabled": 0},
+                limit=1,
+                order_by="creation desc"
+            )
+            if pos_profile:
+                pos_profile = pos_profile[0]
+        
+        return {
+            'status': 'success',
+            'data': pos_profile
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching POS profile: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@frappe.whitelist()
+def check_pos_opening_entry():
+    """Check if user has an open POS Opening Entry and return profile"""
+    try:
+        # Check for open POS Opening Entry
+        opening_entry = frappe.db.get_value(
+            "POS Opening Entry",
+            {
+                "user": frappe.session.user,
+                "status": "Open",
+                "docstatus": 1
+            },
+            ["name", "pos_profile", "period_start_date"],
+            as_dict=True
+        )
+        
+        pos_profile = None
+        if opening_entry and opening_entry.pos_profile:
+            # Get full POS Profile details
+            pos_profile = frappe.db.get_value(
+                "POS Profile",
+                opening_entry.pos_profile,
+                ["name", "warehouse", "selling_price_list", "company"],
+                as_dict=True
+            )
+        
+        return {
+            'status': 'success',
+            'has_open_entry': bool(opening_entry),
+            'opening_entry': opening_entry,
+            'pos_profile': pos_profile
+        }
+    except Exception as e:
+        frappe.log_error(f"Error checking POS opening entry: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
