@@ -69,14 +69,10 @@
           </div>
           <div class="items-list">
             <div v-for="(item, index) in selectedItems" :key="index" class="selected-item" :class="{ 'active': selectedIndex === index }">
-              <div class="item-info">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="item-price">{{ item.price.toFixed(2) }} DA</span>
-              </div>
-              <div class="item-controls">
-                <span class="quantity">Qty: {{ item.quantity }}</span>
-                <span v-if="selectedIndex === index" class="selected-indicator">▼</span>
-              </div>
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-qty">{{ item.quantity }}</span>
+              <span class="item-price">{{ (item.price * item.quantity).toFixed(2) }} DA</span>
+              <span v-if="selectedIndex === index" class="selected-indicator">▼</span>
             </div>
             <div v-if="selectedItems.length === 0" class="empty-cart">
               <p>No items selected</p>
@@ -551,7 +547,7 @@ export default {
   flex-direction: column;
   gap: 15px;
   margin-bottom: 20px;
-  padding-bottom: 15px;
+  padding: 20px 20px 15px 20px;
   border-bottom: 1px solid #e1e8ed;
 }
 
@@ -597,12 +593,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
+  padding: 10px 15px;
   background: white;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #e1e8ed;
   transition: all 0.3s ease;
+  gap: 10px;
 }
 
 .selected-item.active {
@@ -610,26 +604,21 @@ export default {
   box-shadow: 0 0 0 2px rgba(68, 162, 146, 0.2);
 }
 
-.item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
 .item-name {
   font-weight: 500;
   color: #2c3e50;
+  flex: 1;
 }
 
-.item-price {
+.item-qty {
   color: #7f8c8d;
   font-size: 0.9em;
 }
 
-.item-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.item-price {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 0.9em;
 }
 
 .selected-indicator {
