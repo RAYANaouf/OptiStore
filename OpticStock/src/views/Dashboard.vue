@@ -11,6 +11,11 @@
         <h3>Stock Level</h3>
       </div>
       
+      <div class="dashboard-card" @click="$router.push('/stock-matrix')">
+        <div class="card-icon">📊</div>
+        <h3>Stock Matrix</h3>
+      </div>
+      
       <div class="dashboard-card" @click="$router.push('/pricing')">
         <div class="card-icon">💰</div>
         <h3>Pricing App</h3>
@@ -36,8 +41,8 @@ export default {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 70%;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 90%;
   margin: 0 auto 40px auto;
   gap: 20px;
 }

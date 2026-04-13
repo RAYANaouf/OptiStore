@@ -126,17 +126,37 @@
               <button @click="toggleTimeline" class="timeline-btn-fixed">
                 →
               </button>
-              <span v-if="posProfile" class="pos-profile-display">
-                <span class="profile-icon"></span>
-                <span class="profile-info">
-                  <span class="profile-name">{{ posProfile.name }}</span>
-                  <span v-if="posProfile.periodStart" class="profile-time">| {{ posProfile.periodStart }}</span>
-                </span>
-              </span>
-              <span v-else class="pos-profile-display pos-profile-none">
-                <span class="profile-icon"></span>
-                <span class="profile-name">No Profile</span>
-              </span>
+              <div v-if="posProfile" class="profile-card">
+                <div class="profile-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="profile-details">
+                  <span class="profile-badge active">Active</span>
+                  <span class="profile-title">{{ posProfile.name }}</span>
+                  <span v-if="posProfile.periodStart" class="profile-session">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {{ posProfile.periodStart }}
+                  </span>
+                </div>
+              </div>
+              <div v-else class="profile-card profile-inactive">
+                <div class="profile-avatar offline">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="profile-details">
+                  <span class="profile-badge offline">Offline</span>
+                  <span class="profile-title">No Session</span>
+                </div>
+              </div>
             </div>
             <div class="nav-right">
               <button @click="showMoneyMovement" class="money-btn">
@@ -1150,35 +1170,98 @@ export default {
   align-items: center;
 }
 
-.pos-profile-display {
+/* Modern Profile Card */
+.profile-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: 12px;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e1e8ed;
+  transition: all 0.3s ease;
 }
 
-.profile-icon {
-  width: 50px;
-  aspect-ratio: 1;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233498db'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
+.profile-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
-.profile-info {
+.profile-inactive {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-color: #dee2e6;
+}
+
+.profile-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
 }
 
-.profile-time {
-  font-size: 12px;
+.profile-avatar.offline {
+  background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+  box-shadow: none;
+}
+
+.profile-avatar svg {
+  width: 24px;
+  height: 24px;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-badge {
+  font-size: 0.65em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.profile-badge.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.profile-badge.offline {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.profile-title {
+  font-size: 0.95em;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.profile-inactive .profile-title {
   color: #7f8c8d;
 }
 
-.pos-profile-none .profile-name {
-  color: #e74c3c;
+.profile-session {
+  font-size: 0.75em;
+  color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-session svg {
+  width: 12px;
+  height: 12px;
 }
 
 .nav-right {
