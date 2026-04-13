@@ -23,6 +23,44 @@
       </div>
     </div>
 
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filter-group">
+        <label>Item Group</label>
+        <select v-model="selectedItemGroup" class="filter-select" :disabled="loadingFilters">
+          <option value="">{{ loadingFilters ? 'Loading...' : 'All Groups' }}</option>
+          <option v-for="group in itemGroups" :key="group" :value="group">
+            {{ group }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Brand</label>
+        <select v-model="selectedBrand" class="filter-select" :disabled="loadingFilters">
+          <option value="">{{ loadingFilters ? 'Loading...' : 'All Brands' }}</option>
+          <option v-for="brand in brands" :key="brand" :value="brand">
+            {{ brand }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Stock Status</label>
+        <select v-model="stockStatusFilter" class="filter-select">
+          <option value="all">All Status</option>
+          <option value="in">In Stock</option>
+          <option value="low">Low Stock</option>
+          <option value="out">Out of Stock</option>
+        </select>
+      </div>
+      <button @click="resetFilters" class="reset-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/>
+          <path d="M3 3v9h9"/>
+        </svg>
+        Reset
+      </button>
+    </div>
+
     <div class="matrix-container">
       <div class="matrix-table-wrapper">
         <table class="matrix-table">
@@ -105,6 +143,7 @@
 <script>
 export default {
   name: 'StockMatrix',
+  inject: ['$call'],
   data() {
     return {
       // Generate SPH values: 0.00 to 20.00 in 0.25 steps
@@ -117,12 +156,22 @@ export default {
       showEditor: false,
       selectedSph: 0,
       selectedCly: 0,
-      editQuantity: 0
+      editQuantity: 0,
+      // Filter states
+      selectedItemGroup: '',
+      selectedBrand: '',
+      stockStatusFilter: 'all',
+      // Filter options - loaded from ERPNext
+      itemGroups: [],
+      brands: [],
+      loadingFilters: false
     }
   },
   created() {
     // Initialize with some mock data
     this.initializeMockData()
+    // Fetch filter options from ERPNext
+    this.fetchFilterOptions()
   },
   methods: {
     generatePowerValues(start, end, step) {
@@ -175,6 +224,33 @@ export default {
       const key = `${this.selectedSph}-${this.selectedCly}`
       this.stockData[key] = this.editQuantity
       this.closeEditor()
+    },
+    resetFilters() {
+      this.selectedItemGroup = ''
+      this.selectedBrand = ''
+      this.stockStatusFilter = 'all'
+    },
+    async fetchFilterOptions() {
+      this.loadingFilters = true
+      try {
+        // Fetch Item Groups
+        const groupsResponse = await this.$call('opti_stock.api.get_item_groups')
+        console.log('Item Groups Response:', groupsResponse)
+        if (groupsResponse && groupsResponse.status === 'success') {
+          this.itemGroups = groupsResponse.data || []
+        }
+        
+        // Fetch Brands
+        const brandsResponse = await this.$call('opti_stock.api.get_brands')
+        if (brandsResponse && brandsResponse.status === 'success') {
+          this.brands = brandsResponse.data || []
+        }
+      } catch (error) {
+        console.error('Error fetching filter options:', error)
+        // Fallback to empty arrays - dropdowns will show "All Groups" / "All Brands" only
+      } finally {
+        this.loadingFilters = false
+      }
     }
   }
 }
@@ -249,6 +325,89 @@ export default {
 .matrix-legend {
   display: flex;
   gap: 20px;
+}
+
+/* Filters Section */
+.filters-section {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.filter-group label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-select,
+.filter-input {
+  padding: 10px 14px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 0.95em;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.filter-select {
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.filter-select:disabled {
+  background: #f8f9fa;
+  color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.filter-input {
+  min-width: 200px;
+}
+
+.reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #ecf0f1;
+  color: #2c3e50;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: fit-content;
+}
+
+.reset-btn:hover {
+  background: #dfe6e9;
+}
+
+.reset-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .legend-item {

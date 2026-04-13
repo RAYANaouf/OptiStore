@@ -247,3 +247,49 @@ def check_pos_opening_entry():
             'message': str(e)
         }
 
+@frappe.whitelist()
+def get_item_groups():
+    """Get all Item Groups from ERPNext"""
+    try:
+        item_groups = frappe.db.get_all(
+            "Item Group",
+            fields=['name', 'item_group_name'],
+            filters={ },
+            order_by='name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': [g['name'] for g in item_groups],
+            'total_count': len(item_groups)
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching item groups: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@frappe.whitelist()
+def get_brands():
+    """Get all Brands from ERPNext"""
+    try:
+        brands = frappe.db.get_all(
+            "Brand",
+            fields=['name'],
+            filters={},
+            order_by='name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': [b['name'] for b in brands],
+            'total_count': len(brands)
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching brands: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
