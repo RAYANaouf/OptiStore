@@ -10,6 +10,10 @@
           </div>
         </div>
         
+        <div v-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+        
         <form @submit.prevent="login" class="login-form">
           <div class="form-group">
             <label for="email">Username</label>
@@ -76,7 +80,9 @@ export default {
       password: null,
       rememberMe: false,
       loading: false,
-    };
+      showPassword: false,
+      errorMessage: ''
+    }
   },
   inject: ["$auth"],
   async mounted() {
@@ -96,6 +102,11 @@ export default {
           }
         } catch (error) {
           console.error('Login failed:', error);
+          if (error.message && error.message.includes('Invalid login')) {
+            this.errorMessage = 'Invalid username or password. Please try again.';
+          } else {
+            this.errorMessage = 'Login failed. Please check your credentials and try again.';
+          }
         } finally {
           this.loading = false;
         }
@@ -170,6 +181,16 @@ export default {
 
 .login-form {
   margin-bottom: 25px;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  border-left: 4px solid #c33;
 }
 
 .form-group {

@@ -139,6 +139,9 @@
               </span>
             </div>
             <div class="nav-right">
+              <button @click="showMoneyMovement" class="money-btn">
+                <span class="btn-icon">$</span> Money Movement
+              </button>
               <button @click="$router.push('/dashboard')" class="back-btn">
                 Exit
               </button>
@@ -186,8 +189,95 @@
         </div>
       </div>
     </div>
+
+    <!-- Custom Vue.js Money Movement Modal -->
+    <div v-if="showMoneyModal" class="modal-overlay" @click="closeMoneyModal">
+      <div class="modal-container" @click.stop>
+        <div class="modal-header">
+          <h3>Money Movement</h3>
+          <button class="modal-close" @click="closeMoneyModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="section-label">Movement Type</label>
+            <div class="movement-toggle">
+              <label class="movement-option cash-in" :class="{ active: moneyForm.type === 'cash_in' }">
+                <input 
+                  type="radio" 
+                  v-model="moneyForm.type" 
+                  value="cash_in"
+                  class="movement-input"
+                />
+                <div class="movement-content">
+                  <div class="movement-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 3v18M5 10l7-7 7 7M5 14l7 7 7-7"/>
+                    </svg>
+                  </div>
+                  <span class="movement-title">Cash In</span>
+                </div>
+                <div class="check-indicator">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              </label>
+              <label class="movement-option cash-out" :class="{ active: moneyForm.type === 'cash_out' }">
+                <input 
+                  type="radio" 
+                  v-model="moneyForm.type" 
+                  value="cash_out"
+                  class="movement-input"
+                />
+                <div class="movement-content">
+                  <div class="movement-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 21V3M5 14l7 7 7-7M5 10l7-7 7 7"/>
+                    </svg>
+                  </div>
+                  <span class="movement-title">Cash Out</span>
+                </div>
+                <div class="check-indicator">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Amount (DA)</label>
+            <input 
+              v-model.number="moneyForm.amount" 
+              type="number" 
+              class="form-input" 
+              placeholder="Enter amount"
+              min="0"
+            />
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <textarea 
+              v-model="moneyForm.reason" 
+              class="form-textarea" 
+              rows="3"
+              placeholder="Enter reason for movement"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeMoneyModal">Cancel</button>
+          <button class="btn btn-primary" @click="submitMoneyMovement">Submit</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+
+
+
+
 
 <script>
 export default {
@@ -210,7 +300,14 @@ export default {
       priceLists: [],
       numberInput: '',
       inputMode: 'qty',
-      posProfile: null
+      posProfile: null,
+      // Money Movement Modal
+      showMoneyModal: false,
+      moneyForm: {
+        type: 'cash_in',
+        amount: 0,
+        reason: ''
+      }
     }
   },
   computed: {
@@ -277,6 +374,26 @@ export default {
   methods: {
     toggleTimeline() {
       this.isTimelineOpen = !this.isTimelineOpen;
+    },
+    showMoneyMovement() {
+      this.showMoneyModal = true;
+    },
+    closeMoneyModal() {
+      this.showMoneyModal = false;
+      this.moneyForm = { type: 'cash_in', amount: 0, reason: '' };
+    },
+    submitMoneyMovement() {
+      if (this.moneyForm.amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      if (!this.moneyForm.reason.trim()) {
+        alert('Please enter a reason');
+        return;
+      }
+      console.log('Money Movement:', this.moneyForm);
+      alert(`Money ${this.moneyForm.type === 'cash_in' ? 'In' : 'Out'}: ${this.moneyForm.amount} DA`);
+      this.closeMoneyModal();
     },
     setInputMode(mode) {
       this.inputMode = mode;
@@ -594,7 +711,308 @@ export default {
 }
 </script>
 
+
+
+
+
 <style scoped>
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3em;
+  color: #2c3e50;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.8em;
+  color: #7f8c8d;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+  color: #e74c3c;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #e1e8ed;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9em;
+}
+
+.form-select,
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1em;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-select:focus,
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #27ae60;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #219a52;
+}
+
+.btn-secondary {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.btn-secondary:hover {
+  background: #dfe6e9;
+}
+
+/* Modern Movement Toggle Styles */
+.section-label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.movement-toggle {
+  display: flex;
+  gap: 16px;
+}
+
+.movement-option {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.movement-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.movement-option.cash-in.active {
+  border-color: #27ae60;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  box-shadow: 0 8px 25px rgba(39, 174, 96, 0.2);
+}
+
+.movement-option.cash-out.active {
+  border-color: #e74c3c;
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.2);
+}
+
+.movement-input {
+  position: absolute;
+  opacity: 0;
+}
+
+.movement-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.movement-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  transition: all 0.3s;
+}
+
+.movement-option.cash-in .movement-icon {
+  background: #e8f5e9;
+  color: #27ae60;
+}
+
+.movement-option.cash-in.active .movement-icon {
+  background: #27ae60;
+  color: white;
+  transform: scale(1.1);
+}
+
+.movement-option.cash-out .movement-icon {
+  background: #ffebee;
+  color: #e74c3c;
+}
+
+.movement-option.cash-out.active .movement-icon {
+  background: #e74c3c;
+  color: white;
+  transform: scale(1.1);
+}
+
+.movement-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.movement-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.movement-option.cash-in.active .movement-title {
+  color: #1e8449;
+}
+
+.movement-option.cash-out.active .movement-title {
+  color: #c0392b;
+}
+
+.movement-desc {
+  font-size: 0.8em;
+  color: #7f8c8d;
+}
+
+.check-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s;
+}
+
+.movement-option.active .check-indicator {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.movement-option.cash-in.active .check-indicator {
+  background: #27ae60;
+  color: white;
+}
+
+.movement-option.cash-out.active .check-indicator {
+  background: #e74c3c;
+  color: white;
+}
+
+.check-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
 .pos-app {
   padding: 30px;
   min-height: 100vh;
@@ -797,16 +1215,44 @@ export default {
   width: 50px;
   aspect-ratio: 1;
   background-color: white;
-  color: #27ae60;
-  border: 1px solid #27ae60;
-  border-radius: 12px;
+  color: #2c3e50;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 0.65em;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background-color 0.3s;
 }
 
 .back-btn:hover {
   background-color: #f0f0f0;
+}
+
+.money-btn {
+  padding: 8px 16px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.3s;
+}
+
+.money-btn:hover {
+  background-color: #219a52;
+}
+
+.money-btn .btn-icon {
+  font-size: 1.1em;
+  font-weight: 700;
 }
 
 /* Timeline Sidebar */

@@ -1,15 +1,6 @@
 {
-  "name": "opti_stock",
-  "version": "1.0.0",
-  "description": "stock visualisation for optic items",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "cd OpticStock && yarn install",
-    "dev": "cd OpticStock && yarn dev",
-    "build": "cd OpticStock && yarn build"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "feather-icons": "^4.29.2",
+    "frappe-ui": "^0.1.276"
+  }
 }
