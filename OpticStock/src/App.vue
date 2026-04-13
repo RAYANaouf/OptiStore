@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
-    <!-- Header with logout - Only show when logged in and not on POS page -->
-    <header v-if="$auth.isLoggedIn && $route.name !== 'POS'" class="app-header">
+    <!-- Header with logout - Only show when logged in and not on POS or Stock Matrix pages -->
+    <header v-if="$auth.isLoggedIn && $route.name !== 'POS' && $route.name !== 'StockMatrix'" class="app-header">
       <div class="header-content">
         <h1 class="app-title">OpticStock</h1>
         <button @click="$auth.logout()" class="logout-btn">

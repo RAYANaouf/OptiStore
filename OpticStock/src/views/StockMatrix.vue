@@ -1,7 +1,15 @@
 <template>
   <div class="stock-matrix-page">
     <div class="matrix-header">
-      <h1>Lens Stock Matrix</h1>
+      <div class="header-left">
+        <button @click="$router.push('/dashboard')" class="header-btn back-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          Back
+        </button>
+        <h1>Lens Stock Matrix</h1>
+      </div>
       <div class="matrix-legend">
         <span class="legend-item">
           <span class="legend-color in-stock"></span> In Stock
@@ -187,10 +195,55 @@ export default {
   padding: 0 10px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .matrix-header h1 {
   font-size: 1.8em;
   color: #2c3e50;
   margin: 0;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.back-btn {
+  background: white;
+  color: #2c3e50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.logout-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.logout-btn:hover {
+  background: #c0392b;
 }
 
 .matrix-legend {
