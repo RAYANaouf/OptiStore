@@ -293,3 +293,41 @@ def get_brands():
             'message': str(e)
         }
 
+@frappe.whitelist()
+def get_items_by_filters(item_group=None, brand=None):
+    """Get items filtered by item group and/or brand"""
+    try:
+        filters = {'disabled': 0}
+        
+        if item_group:
+            filters['item_group'] = item_group
+        if brand:
+            filters['brand'] = brand
+        
+        items = frappe.db.get_all(
+            "Item",
+            fields=['name', 'item_name', 'item_group', 'brand', 'stock_uom'],
+            filters=filters,
+            order_by='item_name asc'
+        )
+        
+        # Get stock quantities for each item
+        for item in items:
+            stock_balance = frappe.db.get_value(
+                "Bin",
+                {"item_code": item['name']},
+                "sum(actual_qty) as qty"
+            )
+            item['stock_qty'] = stock_balance or 0
+        
+        return {
+            'status': 'success',
+            'data': items,
+            'total_count': len(items)
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching items by filters: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }

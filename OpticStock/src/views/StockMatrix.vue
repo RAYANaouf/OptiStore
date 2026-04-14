@@ -62,6 +62,26 @@
     </div>
 
     <div class="matrix-container">
+      <!-- Matrix Tabs -->
+      <div class="matrix-tabs">
+        <button 
+          v-for="tab in ['++', '--', '-+', '+-']" 
+          :key="tab"
+          class="matrix-tab"
+          :class="{ active: selectedTab === tab }"
+          @click="selectedTab = tab"
+        >
+          <span class="tab-cly">{{ tab[0] }}</span>
+          <span class="tab-divider">/</span>
+          <span class="tab-sph">{{ tab[1] }}</span>
+          <span class="tab-label">{{ getTabLabel(tab) }}</span>
+        </button>
+      </div>
+      
+      <div v-if="loadingItems" class="matrix-loading">
+        <div class="loading-spinner"></div>
+        <span>Loading items...</span>
+      </div>
       <div class="matrix-table-wrapper">
         <table class="matrix-table">
           <thead>
@@ -71,16 +91,16 @@
                   <span>SPH \ CLY</span>
                 </div>
               </th>
-              <th v-for="cly in clyValues" :key="cly" class="cly-header">
+              <th v-for="cly in filteredClyValues" :key="cly" class="cly-header">
                 {{ formatPower(cly) }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="sph in sphValues" :key="sph">
+            <tr v-for="sph in filteredSphValues" :key="sph">
               <th class="sph-header">{{ formatPower(sph) }}</th>
               <td 
-                v-for="cly in clyValues" 
+                v-for="cly in filteredClyValues" 
                 :key="`${sph}-${cly}`"
                 class="stock-cell"
                 :class="getStockClass(sph, cly)"
@@ -164,7 +184,46 @@ export default {
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
-      loadingFilters: false
+      loadingFilters: false,
+      loadingItems: false,
+      filteredItems: [],
+      // Tab selection for matrix pagination by sign
+      selectedTab: '++' // ++, --, -+, +-
+    }
+  },
+  computed: {
+    // Filtered SPH values based on selected tab
+    filteredSphValues() {
+      if (this.selectedTab === '++' || this.selectedTab === '+-') {
+        // Positive SPH
+        return this.sphValues.filter(v => v >= 0)
+      } else {
+        // Negative SPH (-- and -+)
+        return this.sphValues.filter(v => v <= 0).concat(
+          this.generatePowerValues(-0.25, -20, -0.25)
+        )
+      }
+    },
+    // Filtered CLY values based on selected tab
+    filteredClyValues() {
+      if (this.selectedTab === '++' || this.selectedTab === '-+') {
+        // Positive CLY
+        return this.clyValues.filter(v => v > 0)
+      } else {
+        // Negative CLY (-- and +-)
+        return this.clyValues.filter(v => v > 0).map(v => -v).concat(
+          this.generatePowerValues(-0.25, -20, -0.25)
+        )
+      }
+    }
+  },
+  watch: {
+    // Watch for filter changes and fetch items
+    selectedItemGroup(newVal) {
+      this.fetchItemsByFilters()
+    },
+    selectedBrand(newVal) {
+      this.fetchItemsByFilters()
     }
   },
   created() {
@@ -229,6 +288,86 @@ export default {
       this.selectedItemGroup = ''
       this.selectedBrand = ''
       this.stockStatusFilter = 'all'
+      this.filteredItems = []
+    },
+    async fetchItemsByFilters() {
+      // Only fetch if at least one filter is selected
+      if (!this.selectedItemGroup && !this.selectedBrand) {
+        this.filteredItems = []
+        return
+      }
+      
+      this.loadingItems = true
+      try {
+        const response = await this.$call('opti_stock.api.get_items_by_filters', {
+          item_group: this.selectedItemGroup || null,
+          brand: this.selectedBrand || null
+        })
+        
+        if (response && response.status === 'success') {
+          this.filteredItems = response.data || []
+          // Update stock data based on fetched items
+          this.updateStockFromItems(this.filteredItems)
+        }
+      } catch (error) {
+        console.error('Error fetching items:', error)
+      } finally {
+        this.loadingItems = false
+      }
+    },
+    parsePowerValues(itemName) {
+      // Extract power values from item name
+      // Example: "1.56 HMC -2.00 +0.25" -> CLY: -2.00, SPH: +0.25
+      // Example: "1.56 HMC +1.50 -0.75" -> SPH: +1.50, CLY: -0.75
+      
+      if (!itemName) return { sph: null, cly: null }
+      
+      // Find all signed numbers (with + or -)
+      const pattern = /([+-]?\d+\.\d+)/g
+      const matches = itemName.match(pattern)
+      
+      if (!matches || matches.length < 2) return { sph: null, cly: null }
+      
+      // Get the last two values from the end
+      // CLY is usually the first power value, SPH is the second
+      const lastTwo = matches.slice(-2)
+      
+      // Parse and round to nearest 0.25 to handle floating point precision
+      const rawCly = lastTwo[0]
+      const rawSph = lastTwo[1]
+      
+      
+      return { sph: rawSph, cly: rawCly }
+    },
+    updateStockFromItems(items) {
+      // Reset stock data first
+      this.stockData = {}
+      
+      items.forEach(item => {
+        // Parse SPH and CLY from item name (already rounded to 0.25)
+        const { sph, cly } = this.parsePowerValues(item.item_name)
+
+        console.log("Parsed values:", { sph, cly, itemName: item.item_name })
+        
+        if (sph !== null && cly !== null) {
+          // Ensure CLY is within matrix bounds (0.25 to 20.00)
+          // Note: SPH can be negative for myopia prescriptions
+          if (cly >= 0.25 && cly <= 20) {
+            const key = `${sph.toFixed(2)}-${cly.toFixed(2)}`
+            // Add stock quantity (in case multiple items map to same cell)
+            this.stockData[key] = (this.stockData[key] || 0) + (item.stock_qty || 0)
+          }
+        }
+      })
+    },
+    getTabLabel(tab) {
+      const labels = {
+        '++': 'Positive/Positive',
+        '--': 'Negative/Negative',
+        '-+': 'Neg CLY / Pos SPH',
+        '+-': 'Pos CLY / Neg SPH'
+      }
+      return labels[tab] || tab
     },
     async fetchFilterOptions() {
       this.loadingFilters = true
@@ -436,15 +575,109 @@ export default {
   background: #e74c3c;
 }
 
+/* Matrix Tabs */
+.matrix-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+}
+
+.matrix-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.matrix-tab:hover {
+  background: #f1f3f5;
+  transform: translateY(-1px);
+}
+
+.matrix-tab.active {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border-color: #2980b9;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.tab-cly,
+.tab-sph {
+  font-weight: 600;
+  font-size: 1em;
+}
+
+.tab-divider {
+  color: #adb5bd;
+  font-size: 0.8em;
+}
+
+.matrix-tab.active .tab-divider {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tab-label {
+  margin-left: 6px;
+  font-size: 0.75em;
+  opacity: 0.8;
+}
+
 .matrix-container {
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  position: relative;
+}
+
+.matrix-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 100;
+}
+
+.matrix-loading span {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e1e8ed;
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .matrix-table-wrapper {
-  max-height: calc(100vh - 140px);
+  max-height: calc(100vh - 220px);
   overflow: auto;
 }
 
