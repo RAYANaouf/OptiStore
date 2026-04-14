@@ -92,13 +92,13 @@
                 </div>
               </th>
               <th v-for="cly in filteredClyValues" :key="cly" class="cly-header">
-                {{ formatPower(cly) }}
+                {{ formatPowerAbsolute(cly) }}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="sph in filteredSphValues" :key="sph">
-              <th class="sph-header">{{ formatPower(sph) }}</th>
+              <th class="sph-header">{{ formatPowerAbsolute(sph) }}</th>
               <td 
                 v-for="cly in filteredClyValues" 
                 :key="`${sph}-${cly}`"
@@ -168,8 +168,8 @@ export default {
     return {
       // Generate SPH values: 0.00 to 20.00 in 0.25 steps
       sphValues: this.generatePowerValues(0, 20, 0.25),
-      // Generate CLY values: 0.25 to 20.00 in 0.25 steps
-      clyValues: this.generatePowerValues(0.25, 20, 0.25),
+      // Generate CLY values: 0.00 to 20.00 in 0.25 steps
+      clyValues: this.generatePowerValues(0, 20, 0.25),
       // Mock stock data - in real app, this comes from backend
       stockData: {},
       // Editor modal state
@@ -207,11 +207,11 @@ export default {
     // Filtered CLY values based on selected tab
     filteredClyValues() {
       if (this.selectedTab === '++' || this.selectedTab === '-+') {
-        // Positive CLY
-        return this.clyValues.filter(v => v > 0)
+        // Positive CLY (includes 0.00)
+        return this.clyValues.filter(v => v >= 0)
       } else {
-        // Negative CLY (-- and +-)
-        return this.clyValues.filter(v => v > 0).map(v => -v).concat(
+        // Negative CLY (-- and +-) - include 0.00 to get -0.00
+        return this.clyValues.filter(v => v >= 0).map(v => -v).concat(
           this.generatePowerValues(-0.25, -20, -0.25)
         )
       }
@@ -224,6 +224,13 @@ export default {
     },
     selectedBrand(newVal) {
       this.fetchItemsByFilters()
+    },
+    // Watch for tab changes and refresh matrix
+    selectedTab(newVal) {
+      // Re-process items for the new tab
+      if (this.filteredItems.length > 0) {
+        this.updateStockFromItems(this.filteredItems)
+      }
     }
   },
   created() {
@@ -235,9 +242,15 @@ export default {
   methods: {
     generatePowerValues(start, end, step) {
       const values = []
-      for (let i = start; i <= end; i += step) {
-        // Handle floating point precision
-        values.push(Math.round(i * 100) / 100)
+      // Handle both positive and negative steps
+      if (step > 0) {
+        for (let i = start; i <= end; i += step) {
+          values.push(Math.round(i * 100) / 100)
+        }
+      } else {
+        for (let i = start; i >= end; i += step) {
+          values.push(Math.round(i * 100) / 100)
+        }
       }
       return values
     },
@@ -245,6 +258,11 @@ export default {
       // Format to 2 decimal places, removing trailing zeros
       const formatted = value.toFixed(2)
       return formatted
+    },
+    formatPowerAbsolute(value) {
+      // Format without sign - show absolute value
+      const absValue = Math.abs(value)
+      return absValue.toFixed(2)
     },
     initializeMockData() {
       // Create some random stock data for demonstration
@@ -258,7 +276,10 @@ export default {
       }
     },
     getStockQuantity(sph, cly) {
-      const key = `${sph}-${cly}`
+      // Use absolute values for key lookup (matrix displays absolute values)
+      const absSph = Math.abs(sph).toFixed(2)
+      const absCly = Math.abs(cly).toFixed(2)
+      const key = `${absSph}-${absCly}`
       return this.stockData[key] || 0
     },
     getStockClass(sph, cly) {
@@ -280,7 +301,10 @@ export default {
       this.editQuantity = Math.max(0, this.editQuantity + delta)
     },
     saveStock() {
-      const key = `${this.selectedSph}-${this.selectedCly}`
+      // Use absolute values for key (consistent with display)
+      const absSph = Math.abs(this.selectedSph).toFixed(2)
+      const absCly = Math.abs(this.selectedCly).toFixed(2)
+      const key = `${absSph}-${absCly}`
       this.stockData[key] = this.editQuantity
       this.closeEditor()
     },
@@ -303,6 +327,8 @@ export default {
           item_group: this.selectedItemGroup || null,
           brand: this.selectedBrand || null
         })
+
+        console.log("fetched items : " , response)
         
         if (response && response.status === 'success') {
           this.filteredItems = response.data || []
@@ -344,19 +370,32 @@ export default {
       this.stockData = {}
       
       items.forEach(item => {
-        // Parse SPH and CLY from item name (already rounded to 0.25)
+        console.log("item =+=+===>" , item.name)
         const { sph, cly } = this.parsePowerValues(item.item_name)
-
-        console.log("Parsed values:", { sph, cly, itemName: item.item_name })
+        console.log ("cly" , cly , "sph" , sph)
         
         if (sph !== null && cly !== null) {
-          // Ensure CLY is within matrix bounds (0.25 to 20.00)
-          // Note: SPH can be negative for myopia prescriptions
-          if (cly >= 0.25 && cly <= 20) {
-            const key = `${sph.toFixed(2)}-${cly.toFixed(2)}`
+          // Determine signs of SPH and CLY
+          const sphSign = sph.includes('+') ? '+' : '-'
+          const clySign = cly.includes('+') ? '+' : '-'
+          const itemTab = `${clySign}${sphSign}`
+          console.log("itemTab ===> " , itemTab)
+          
+          // Only add to matrix if item matches selected tab
+          if (itemTab === this.selectedTab) {
+            // Build key with absolute values (no signs)
+            const absSph = sph.replace('+', '').replace('-', '')
+            const absCly = cly.replace('+', '').replace('-', '')
+            const key = `${absSph}-${absCly}`
+
+            console.log("selected tab " , this.selectedTab, "itemTab" , itemTab, "key" , key , "stock_qty" , item.stock_qty)
+            
             // Add stock quantity (in case multiple items map to same cell)
             this.stockData[key] = (this.stockData[key] || 0) + (item.stock_qty || 0)
+            console.log("stockData" , this.stockData[key])
           }
+
+          console.log("stockData" , this.stockData["2.00-0.00"])
         }
       })
     },

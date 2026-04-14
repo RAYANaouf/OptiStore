@@ -313,11 +313,13 @@ def get_items_by_filters(item_group=None, brand=None):
         
         # Get stock quantities for each item
         for item in items:
+            print("item ===========>", item.name.strip())
             stock_balance = frappe.db.get_value(
                 "Bin",
-                {"item_code": item['name']},
-                "sum(actual_qty) as qty"
+                {"item_code": item.name.strip()},
+                'actual_qty'
             )
+            print("stock_balance ===========>", stock_balance)
             item['stock_qty'] = stock_balance or 0
         
         return {
