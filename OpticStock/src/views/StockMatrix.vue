@@ -44,6 +44,24 @@
         </select>
       </div>
       <div class="filter-group">
+        <label>Company</label>
+        <select v-model="selectedCompany" class="filter-select" :disabled="loadingFilters">
+          <option value="">{{ loadingFilters ? 'Loading...' : 'All Companies' }}</option>
+          <option v-for="company in companies" :key="company" :value="company">
+            {{ company }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Warehouse</label>
+        <select v-model="selectedWarehouse" class="filter-select" :disabled="loadingFilters || !selectedCompany">
+          <option value="">{{ loadingFilters ? 'Loading...' : (selectedCompany ? 'All Warehouses' : 'Select Company First') }}</option>
+          <option v-for="warehouse in warehouses" :key="warehouse" :value="warehouse">
+            {{ warehouse }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label>Stock Status</label>
         <select v-model="stockStatusFilter" class="filter-select">
           <option value="all">All Status</option>
@@ -180,10 +198,14 @@ export default {
       // Filter states
       selectedItemGroup: '',
       selectedBrand: '',
+      selectedCompany: '',
+      selectedWarehouse: '',
       stockStatusFilter: 'all',
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
+      companies: [],
+      warehouses: [],
       loadingFilters: false,
       loadingItems: false,
       filteredItems: [],
@@ -223,6 +245,15 @@ export default {
       this.fetchItemsByFilters()
     },
     selectedBrand(newVal) {
+      this.fetchItemsByFilters()
+    },
+    // Watch for company changes - fetch warehouses and refresh items
+    selectedCompany(newVal) {
+      this.fetchWarehouses()
+      this.fetchItemsByFilters()
+    },
+    // Watch for warehouse changes - refresh items
+    selectedWarehouse(newVal) {
       this.fetchItemsByFilters()
     },
     // Watch for tab changes and refresh matrix
@@ -311,6 +342,8 @@ export default {
     resetFilters() {
       this.selectedItemGroup = ''
       this.selectedBrand = ''
+      this.selectedCompany = ''
+      this.selectedWarehouse = ''
       this.stockStatusFilter = 'all'
       this.filteredItems = []
     },
@@ -325,7 +358,9 @@ export default {
       try {
         const response = await this.$call('opti_stock.api.get_items_by_filters', {
           item_group: this.selectedItemGroup || null,
-          brand: this.selectedBrand || null
+          brand: this.selectedBrand || null,
+          warehouse: this.selectedWarehouse || null,
+          company: this.selectedCompany || null
         })
 
         console.log("fetched items : " , response)
@@ -423,11 +458,37 @@ export default {
         if (brandsResponse && brandsResponse.status === 'success') {
           this.brands = brandsResponse.data || []
         }
+        
+        // Fetch Companies
+        const companiesResponse = await this.$call('opti_stock.api.get_companies')
+        if (companiesResponse && companiesResponse.status === 'success') {
+          this.companies = companiesResponse.data || []
+        }
       } catch (error) {
         console.error('Error fetching filter options:', error)
         // Fallback to empty arrays - dropdowns will show "All Groups" / "All Brands" only
       } finally {
         this.loadingFilters = false
+      }
+    },
+    async fetchWarehouses() {
+      // Fetch warehouses for selected company
+      if (!this.selectedCompany) {
+        this.warehouses = []
+        this.selectedWarehouse = ''
+        return
+      }
+      
+      try {
+        const response = await this.$call('opti_stock.api.get_warehouses', {
+          company: this.selectedCompany
+        })
+        if (response && response.status === 'success') {
+          this.warehouses = response.data || []
+        }
+      } catch (error) {
+        console.error('Error fetching warehouses:', error)
+        this.warehouses = []
       }
     }
   }

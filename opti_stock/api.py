@@ -294,32 +294,119 @@ def get_brands():
         }
 
 @frappe.whitelist()
-def get_items_by_filters(item_group=None, brand=None):
-    """Get items filtered by item group and/or brand"""
+def get_companies():
+    """Get all Companies from ERPNext"""
     try:
-        filters = {'disabled': 0}
+        companies = frappe.db.get_all(
+            "Company",
+            fields=['name', 'company_name'],
+            filters={},
+            order_by='name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': [c['name'] for c in companies],
+            'total_count': len(companies)
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching companies: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@frappe.whitelist()
+def get_warehouses(company=None):
+    """Get all Warehouses from ERPNext, optionally filtered by company"""
+    try:
+        filters = {'is_group': 0}
+        if company:
+            filters['company'] = company
+            
+        warehouses = frappe.db.get_all(
+            "Warehouse",
+            fields=['name', 'warehouse_name'],
+            filters=filters,
+            order_by='name asc'
+        )
+        
+        return {
+            'status': 'success',
+            'data': [w['name'] for w in warehouses],
+            'total_count': len(warehouses)
+        }
+    except Exception as e:
+        frappe.log_error(f"Error fetching warehouses: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+def get_child_item_groups(parent_group):
+    """Recursively get all child item groups including the parent"""
+    all_groups = [parent_group]
+    
+    # Find direct children
+    children = frappe.db.get_all(
+        "Item Group",
+        filters={'parent_item_group': parent_group},
+        pluck='name'
+    )
+    
+    # Recursively get children's children
+    for child in children:
+        all_groups.extend(get_child_item_groups(child))
+    
+    return all_groups
+
+@frappe.whitelist()
+def get_items_by_filters(item_group=None, brand=None, warehouse=None, company=None):
+    """Get items filtered by item group (including children), brand, warehouse and/or company"""
+    try:
+        items = []
         
         if item_group:
-            filters['item_group'] = item_group
-        if brand:
-            filters['brand'] = brand
-        
-        items = frappe.db.get_all(
-            "Item",
-            fields=['name', 'item_name', 'item_group', 'brand', 'stock_uom'],
-            filters=filters,
-            order_by='item_name asc'
-        )
+            # Get all child groups recursively
+            all_groups = get_child_item_groups(item_group)
+            
+            # Fetch items from all groups
+            for group in all_groups:
+                filters = {'disabled': 0, 'item_group': group}
+                if brand:
+                    filters['brand'] = brand
+                
+                group_items = frappe.db.get_all(
+                    "Item",
+                    fields=['name', 'item_name', 'item_group', 'brand', 'stock_uom'],
+                    filters=filters,
+                    order_by='item_name asc'
+                )
+                items.extend(group_items)
+        else:
+            # No group filter - fetch by brand only if provided
+            filters = {'disabled': 0}
+            if brand:
+                filters['brand'] = brand
+            
+            items = frappe.db.get_all(
+                "Item",
+                fields=['name', 'item_name', 'item_group', 'brand', 'stock_uom'],
+                filters=filters,
+                order_by='item_name asc'
+            )
         
         # Get stock quantities for each item
         for item in items:
-            print("item ===========>", item.name.strip())
+            bin_filters = {"item_code": item.name.strip()}
+            if warehouse:
+                bin_filters['warehouse'] = warehouse
+            
             stock_balance = frappe.db.get_value(
                 "Bin",
-                {"item_code": item.name.strip()},
+                bin_filters,
                 'actual_qty'
             )
-            print("stock_balance ===========>", stock_balance)
             item['stock_qty'] = stock_balance or 0
         
         return {
