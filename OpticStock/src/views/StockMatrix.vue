@@ -82,8 +82,8 @@
     <div class="matrix-container">
       <!-- Matrix Tabs -->
       <div class="matrix-tabs">
-        <button 
-          v-for="tab in ['++', '--', '-+', '+-']" 
+        <button
+          v-for="tab in ['--', '-+', '++']"
           :key="tab"
           class="matrix-tab"
           :class="{ active: selectedTab === tab }"
@@ -92,7 +92,6 @@
           <span class="tab-cly">{{ tab[0] }}</span>
           <span class="tab-divider">/</span>
           <span class="tab-sph">{{ tab[1] }}</span>
-          <span class="tab-label">{{ getTabLabel(tab) }}</span>
         </button>
       </div>
       
@@ -184,12 +183,18 @@ export default {
   inject: ['$call'],
   data() {
     return {
-      // Generate SPH values: 0.00 to 20.00 in 0.25 steps
-      sphValues: this.generatePowerValues(0, 20, 0.25),
-      // Generate CLY values: 0.00 to 20.00 in 0.25 steps
-      clyValues: this.generatePowerValues(0, 20, 0.25),
+      // Generate SPH values: 0.00 to 20.00 in 0.50 steps (reduced for performance)
+      sphValues: this.generatePowerValues(0, 20, 0.50),
+      // Generate CLY values: 0.00 to 20.00 in 0.50 steps (reduced for performance)
+      clyValues: this.generatePowerValues(0, 20, 0.50),
       // Mock stock data - in real app, this comes from backend
       stockData: {},
+      // Cache stock data by tab for fast switching
+      stockDataByTab: {
+        '--': {},
+        '-+': {},
+        '++': {}
+      },
       // Editor modal state
       showEditor: false,
       selectedSph: 0,
@@ -210,10 +215,17 @@ export default {
       loadingItems: false,
       filteredItems: [],
       // Tab selection for matrix pagination by sign
-      selectedTab: '++' // ++, --, -+, +-
+      selectedTab: '--' // --, -+, ++
     }
   },
   computed: {
+    // Pre-cached negative values
+    negativeSphValues() {
+      return this.generatePowerValues(-0.50, -20, -0.50)
+    },
+    negativeClyValues() {
+      return this.generatePowerValues(-0.50, -20, -0.50)
+    },
     // Filtered SPH values based on selected tab
     filteredSphValues() {
       if (this.selectedTab === '++' || this.selectedTab === '+-') {
@@ -221,9 +233,7 @@ export default {
         return this.sphValues.filter(v => v >= 0)
       } else {
         // Negative SPH (-- and -+)
-        return this.sphValues.filter(v => v <= 0).concat(
-          this.generatePowerValues(-0.25, -20, -0.25)
-        )
+        return this.sphValues.filter(v => v <= 0).concat(this.negativeSphValues)
       }
     },
     // Filtered CLY values based on selected tab
@@ -233,9 +243,7 @@ export default {
         return this.clyValues.filter(v => v >= 0)
       } else {
         // Negative CLY (-- and +-) - include 0.00 to get -0.00
-        return this.clyValues.filter(v => v >= 0).map(v => -v).concat(
-          this.generatePowerValues(-0.25, -20, -0.25)
-        )
+        return this.clyValues.filter(v => v >= 0).map(v => -v).concat(this.negativeClyValues)
       }
     }
   },
@@ -258,10 +266,10 @@ export default {
     },
     // Watch for tab changes and refresh matrix
     selectedTab(newVal) {
-      // Re-process items for the new tab
-      if (this.filteredItems.length > 0) {
-        this.updateStockFromItems(this.filteredItems)
-      }
+      // Defer to prevent freeze
+      requestAnimationFrame(() => {
+        this.stockData = this.stockDataByTab[newVal] || {}
+      })
     }
   },
   created() {
@@ -401,45 +409,45 @@ export default {
       return { sph: rawSph, cly: rawCly }
     },
     updateStockFromItems(items) {
-      // Reset stock data first
-      this.stockData = {}
-      
+      // Reset cache for all tabs
+      this.stockDataByTab = {
+        '--': {},
+        '-+': {},
+        '++': {}
+      }
+
+      // Process all items once and categorize by tab
       items.forEach(item => {
-        console.log("item =+=+===>" , item.name)
         const { sph, cly } = this.parsePowerValues(item.item_name)
-        console.log ("cly" , cly , "sph" , sph)
-        
+
         if (sph !== null && cly !== null) {
           // Determine signs of SPH and CLY
           const sphSign = sph.includes('+') ? '+' : '-'
           const clySign = cly.includes('+') ? '+' : '-'
           const itemTab = `${clySign}${sphSign}`
-          console.log("itemTab ===> " , itemTab)
-          
-          // Only add to matrix if item matches selected tab
-          if (itemTab === this.selectedTab) {
+
+          // Only process items for our 3 supported tabs
+          if (this.stockDataByTab[itemTab]) {
             // Build key with absolute values (no signs)
             const absSph = sph.replace('+', '').replace('-', '')
             const absCly = cly.replace('+', '').replace('-', '')
             const key = `${absSph}-${absCly}`
 
-            console.log("selected tab " , this.selectedTab, "itemTab" , itemTab, "key" , key , "stock_qty" , item.stock_qty)
-            
-            // Add stock quantity (in case multiple items map to same cell)
-            this.stockData[key] = (this.stockData[key] || 0) + (item.stock_qty || 0)
-            console.log("stockData" , this.stockData[key])
+            // Add stock quantity to the appropriate tab cache
+            this.stockDataByTab[itemTab][key] = (this.stockDataByTab[itemTab][key] || 0) + (item.stock_qty || 0)
           }
-
-          console.log("stockData" , this.stockData["2.00-0.00"])
         }
       })
+
+      // Set current stockData from cache based on selected tab
+      this.stockData = this.stockDataByTab[this.selectedTab] || {}
     },
     getTabLabel(tab) {
       const labels = {
-        '++': 'Positive/Positive',
-        '--': 'Negative/Negative',
-        '-+': 'Neg CLY / Pos SPH',
-        '+-': 'Pos CLY / Neg SPH'
+        '++': '+/+',
+        '--': '-/-',
+        '-+': '-/+',
+        '+-': '+/-'
       }
       return labels[tab] || tab
     },
@@ -498,16 +506,19 @@ export default {
 <style scoped>
 .stock-matrix-page {
   padding: 20px;
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .matrix-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 0 10px;
 }
 
 .header-left {
@@ -571,11 +582,13 @@ export default {
   display: flex;
   gap: 16px;
   align-items: flex-end;
-  margin-bottom: 20px;
   padding: 20px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .filter-group {
@@ -675,52 +688,52 @@ export default {
   background: #e74c3c;
 }
 
-/* Matrix Tabs */
+/* Matrix Tabs - Small & Square */
 .matrix-tabs {
   display: flex;
   gap: 4px;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #dee2e6;
+  justify-content: center;
 }
 
 .matrix-tab {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: 2px;
+  width: 48px;
+  height: 32px;
+  padding: 0;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
+  border-radius: 4px;
   background: white;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85em;
-  font-weight: 500;
+  transition: all 0.15s ease;
+  font-size: 0.8em;
+  font-weight: 600;
 }
 
 .matrix-tab:hover {
   background: #f1f3f5;
-  transform: translateY(-1px);
 }
 
 .matrix-tab.active {
   background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
   color: white;
   border-color: #2980b9;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .tab-cly,
 .tab-sph {
   font-weight: 600;
-  font-size: 1em;
+  font-size: 0.9em;
 }
 
 .tab-divider {
   color: #adb5bd;
-  font-size: 0.8em;
+  font-size: 0.7em;
 }
 
 .matrix-tab.active .tab-divider {
@@ -739,6 +752,10 @@ export default {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .matrix-loading {
@@ -777,12 +794,14 @@ export default {
 }
 
 .matrix-table-wrapper {
-  max-height: calc(100vh - 220px);
+  flex: 1;
   overflow: auto;
+  min-height: 0;
 }
 
 .matrix-table {
   width: 100%;
+  min-width: 1200px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.75em;
