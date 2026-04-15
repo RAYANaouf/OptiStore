@@ -25,6 +25,28 @@
           {{ selectedCompanies.length }} of {{ companies.length }} selected
         </div>
       </div>
+      
+      <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
+        <div class="filter-actions">
+          <button @click="selectAllWarehouses" class="action-btn select-all">Select All</button>
+          <button @click="clearAllWarehouses" class="action-btn clear-all">Clear All</button>
+        </div>
+        <div class="warehouses-list">
+          <label v-for="warehouse in warehouses" :key="warehouse" class="warehouse-item">
+            <input 
+              type="checkbox" 
+              :value="warehouse" 
+              v-model="selectedWarehouses"
+              @change="onWarehousesChange"
+            />
+            <span class="checkmark"></span>
+            <span class="warehouse-name">{{ warehouse }}</span>
+          </label>
+        </div>
+        <div class="selected-count">
+          {{ selectedWarehouses.length }} of {{ warehouses.length }} selected
+        </div>
+      </div>
     </aside>
     
     <main class="main-content">
@@ -71,16 +93,7 @@
           </option>
         </select>
       </div>
-      <div class="filter-group">
-        <label>Warehouse</label>
-        <select v-model="selectedWarehouse" class="filter-select" :disabled="loadingFilters || selectedCompanies.length === 0">
-          <option value="">{{ loadingFilters ? 'Loading...' : (selectedCompanies.length > 0 ? 'All Warehouses' : 'Select Companies First') }}</option>
-          <option v-for="warehouse in warehouses" :key="warehouse" :value="warehouse">
-            {{ warehouse }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group">
+            <div class="filter-group">
         <label>Stock Status</label>
         <select v-model="stockStatusFilter" class="filter-select">
           <option value="all">All Status</option>
@@ -224,7 +237,7 @@ export default {
       selectedItemGroup: '',
       selectedBrand: '',
       selectedCompanies: [],
-      selectedWarehouse: '',
+      selectedWarehouses: [],
       stockStatusFilter: 'all',
       // Filter options - loaded from ERPNext
       itemGroups: [],
@@ -283,9 +296,12 @@ export default {
       },
       deep: true
     },
-    // Watch for warehouse changes - refresh items
-    selectedWarehouse(newVal) {
-      this.fetchItemsByFilters()
+    // Watch for warehouses changes - refresh items
+    selectedWarehouses: {
+      handler(newVal) {
+        this.fetchItemsByFilters()
+      },
+      deep: true
     },
     // Watch for tab changes and refresh matrix
     selectedTab(newVal) {
@@ -390,7 +406,7 @@ export default {
         const response = await this.$call('opti_stock.api.get_items_by_filters', {
           item_group: this.selectedItemGroup || null,
           brand: this.selectedBrand || null,
-          warehouse: this.selectedWarehouse || null,
+          warehouses: this.selectedWarehouses.length > 0 ? this.selectedWarehouses : null,
           companies: this.selectedCompanies.length > 0 ? this.selectedCompanies : null
         })
 
@@ -416,6 +432,17 @@ export default {
     onCompaniesChange() {
       // This method is called when any company checkbox changes
       // The watcher will handle the API calls
+    },
+    selectAllWarehouses() {
+      this.selectedWarehouses = [...this.warehouses]
+    },
+    clearAllWarehouses() {
+      this.selectedWarehouses = []
+    },
+    onWarehousesChange() {
+      // This method is called when any warehouse checkbox changes
+      // The watcher will handle the API calls
+      console.log('Warehouse selection changed:', this.selectedWarehouses)
     },
     parsePowerValues(itemName) {
       // Extract power values from item name
@@ -513,20 +540,31 @@ export default {
       }
     },
     async fetchWarehouses() {
-      // Fetch warehouses for selected company
-      if (!this.selectedCompany) {
+      // Fetch warehouses for selected companies
+      if (this.selectedCompanies.length === 0) {
         this.warehouses = []
-        this.selectedWarehouse = ''
+        this.selectedWarehouses = []
+        console.log('No companies selected, clearing warehouses')
         return
       }
       
       try {
-        const response = await this.$call('opti_stock.api.get_warehouses', {
-          company: this.selectedCompany
-        })
-        if (response && response.status === 'success') {
-          this.warehouses = response.data || []
+        // Get warehouses for all selected companies
+        const allWarehouses = new Set()
+        
+        console.log('Fetching warehouses for companies:', this.selectedCompanies)
+        for (const company of this.selectedCompanies) {
+          const response = await this.$call('opti_stock.api.get_warehouses', {
+            company: company
+          })
+          if (response && response.status === 'success') {
+            console.log(`Warehouses for ${company}:`, response.data)
+            response.data?.forEach(warehouse => allWarehouses.add(warehouse))
+          }
         }
+        
+        this.warehouses = Array.from(allWarehouses).sort()
+        console.log('Final warehouses list:', this.warehouses)
       } catch (error) {
         console.error('Error fetching warehouses:', error)
         this.warehouses = []
@@ -639,12 +677,14 @@ export default {
   transition: all 0.2s ease;
 }
 
-.company-item input[type="checkbox"]:checked + .checkmark {
+.company-item input[type="checkbox"]:checked + .checkmark,
+.warehouse-item input[type="checkbox"]:checked + .checkmark {
   background: #3498db;
   border-color: #3498db;
 }
 
-.company-item input[type="checkbox"]:checked + .checkmark::after {
+.company-item input[type="checkbox"]:checked + .checkmark::after,
+.warehouse-item input[type="checkbox"]:checked + .checkmark::after {
   content: '';
   position: absolute;
   left: 3px;
@@ -669,6 +709,45 @@ export default {
   color: rgba(255, 255, 255, 0.6);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: auto;
+}
+
+/* Warehouses Filter */
+.warehouses-filter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.warehouses-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.warehouse-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.warehouse-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.warehouse-item input[type="checkbox"] {
+  display: none;
+}
+
+.warehouse-name {
+  flex: 1;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Main Content */

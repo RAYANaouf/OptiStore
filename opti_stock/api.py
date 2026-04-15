@@ -361,8 +361,8 @@ def get_child_item_groups(parent_group):
     return all_groups
 
 @frappe.whitelist()
-def get_items_by_filters(item_group=None, brand=None, warehouse=None, company=None, companies=None):
-    """Get items filtered by item group (including children), brand, warehouse and/or company/companies"""
+def get_items_by_filters(item_group=None, brand=None, warehouse=None, warehouses=None, company=None, companies=None):
+    """Get items filtered by item group (including children), brand, warehouse/warehouses and/or company/companies"""
     try:
         items = []
         
@@ -399,41 +399,117 @@ def get_items_by_filters(item_group=None, brand=None, warehouse=None, company=No
         # Get stock quantities for each item
         for item in items:
             bin_filters = {"item_code": item.name.strip()}
-            if warehouse:
-                bin_filters['warehouse'] = warehouse
             
-            # Filter by companies if provided
-            if companies:
-                # Get stock from all specified companies
+            # Filter by warehouses if provided
+            if warehouses:
+                # Get stock from all specified warehouses
                 total_stock = 0
-                for company in companies:
-                    company_bin_filters = bin_filters.copy()
-                    company_bin_filters['company'] = company
+                for warehouse in warehouses:
+                    warehouse_bin_filters = bin_filters.copy()
+                    warehouse_bin_filters['warehouse'] = warehouse
                     
+                    # Filter by companies if provided
+                    if companies:
+                        # Get stock from all specified companies for this warehouse
+                        for company in companies:
+                            company_bin_filters = warehouse_bin_filters.copy()
+                            company_bin_filters['company'] = company
+                            
+                            stock_balance = frappe.db.get_value(
+                                "Bin",
+                                company_bin_filters,
+                                'actual_qty'
+                            )
+                            total_stock += stock_balance or 0
+                    elif company:
+                        # Single company filter (backward compatibility)
+                        company_bin_filters = warehouse_bin_filters.copy()
+                        company_bin_filters['company'] = company
+                        stock_balance = frappe.db.get_value(
+                            "Bin",
+                            company_bin_filters,
+                            'actual_qty'
+                        )
+                        total_stock += stock_balance or 0
+                    else:
+                        # No company filter
+                        stock_balance = frappe.db.get_value(
+                            "Bin",
+                            warehouse_bin_filters,
+                            'actual_qty'
+                        )
+                        total_stock += stock_balance or 0
+                item['stock_qty'] = total_stock
+            elif warehouse:
+                # Single warehouse filter (backward compatibility)
+                bin_filters['warehouse'] = warehouse
+                
+                # Filter by companies if provided
+                if companies:
+                    # Get stock from all specified companies for this warehouse
+                    total_stock = 0
+                    for company in companies:
+                        company_bin_filters = bin_filters.copy()
+                        company_bin_filters['company'] = company
+                        
+                        stock_balance = frappe.db.get_value(
+                            "Bin",
+                            company_bin_filters,
+                            'actual_qty'
+                        )
+                        total_stock += stock_balance or 0
+                    item['stock_qty'] = total_stock
+                elif company:
+                    # Single company filter (backward compatibility)
+                    bin_filters['company'] = company
                     stock_balance = frappe.db.get_value(
                         "Bin",
-                        company_bin_filters,
+                        bin_filters,
                         'actual_qty'
                     )
-                    total_stock += stock_balance or 0
-                item['stock_qty'] = total_stock
-            elif company:
-                # Single company filter (backward compatibility)
-                bin_filters['company'] = company
-                stock_balance = frappe.db.get_value(
-                    "Bin",
-                    bin_filters,
-                    'actual_qty'
-                )
-                item['stock_qty'] = stock_balance or 0
+                    item['stock_qty'] = stock_balance or 0
+                else:
+                    # No company filter
+                    stock_balance = frappe.db.get_value(
+                        "Bin",
+                        bin_filters,
+                        'actual_qty'
+                    )
+                    item['stock_qty'] = stock_balance or 0
             else:
-                # No company filter
-                stock_balance = frappe.db.get_value(
-                    "Bin",
-                    bin_filters,
-                    'actual_qty'
-                )
-                item['stock_qty'] = stock_balance or 0
+                # No warehouse filter
+                # Filter by companies if provided
+                if companies:
+                    # Get stock from all specified companies
+                    total_stock = 0
+                    for company in companies:
+                        company_bin_filters = bin_filters.copy()
+                        company_bin_filters['company'] = company
+                        
+                        stock_balance = frappe.db.get_value(
+                            "Bin",
+                            company_bin_filters,
+                            'actual_qty'
+                        )
+                        total_stock += stock_balance or 0
+                    item['stock_qty'] = total_stock
+                elif company:
+                    # Single company filter (backward compatibility)
+                    bin_filters['company'] = company
+                    stock_balance = frappe.db.get_value(
+                        "Bin",
+                        bin_filters,
+                        'actual_qty'
+                    )
+                    item['stock_qty'] = stock_balance or 0
+                else:
+                    # No company or warehouse filter
+                    stock_balance = frappe.db.get_value(
+                        "Bin",
+                        bin_filters,
+                        'actual_qty'
+                    )
+                    item['stock_qty'] = stock_balance or 0
         
         return {
             'status': 'success',
