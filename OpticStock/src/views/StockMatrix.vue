@@ -2,9 +2,18 @@
   <div class="stock-matrix-page">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h2>Filter by Companies</h2>
+        <div class="header-title-row">
+          <button @click="$router.push('/dashboard')" class="sidebar-back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+          </button>
+          <h2>OptiStock</h2>
+        </div>
       </div>
       <div class="companies-filter">
+        <h3>Filter by Companies</h3>
         <div class="filter-actions">
           <button @click="selectAllCompanies" class="action-btn select-all">Select All</button>
           <button @click="clearAllCompanies" class="action-btn clear-all">Clear All</button>
@@ -27,6 +36,7 @@
       </div>
       
       <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
+        <h3>Filter by Warehouses</h3>
         <div class="filter-actions">
           <button @click="selectAllWarehouses" class="action-btn select-all">Select All</button>
           <button @click="clearAllWarehouses" class="action-btn clear-all">Clear All</button>
@@ -47,53 +57,69 @@
           {{ selectedWarehouses.length }} of {{ warehouses.length }} selected
         </div>
       </div>
+      
+      <div class="item-group-filter">
+        <h3>Item Group</h3>
+        <div class="item-groups-list">
+          <label class="item-group-item all-option">
+            <input 
+              type="checkbox" 
+              v-model="selectAllItemGroupsChecked"
+              @change="toggleAllItemGroups"
+            />
+            <span class="checkmark"></span>
+            <span class="item-group-name">ALL</span>
+          </label>
+          <label v-for="group in itemGroups" :key="group" class="item-group-item">
+            <input 
+              type="checkbox" 
+              :value="group" 
+              v-model="selectedItemGroups"
+              @change="onItemGroupsChange"
+            />
+            <span class="checkmark"></span>
+            <span class="item-group-name">{{ group }}</span>
+          </label>
+        </div>
+        <div class="selected-count">
+          {{ selectedItemGroups.length }} of {{ itemGroups.length }} selected
+        </div>
+      </div>
+      
+      <div class="brand-filter">
+        <h3>Brand</h3>
+        <div class="brands-list">
+          <label class="brand-item all-option">
+            <input 
+              type="checkbox" 
+              v-model="selectAllBrandsChecked"
+              @change="toggleAllBrands"
+            />
+            <span class="checkmark"></span>
+            <span class="brand-item-name">ALL</span>
+          </label>
+          <label v-for="brand in brands" :key="brand" class="brand-item">
+            <input 
+              type="checkbox" 
+              :value="brand" 
+              v-model="selectedBrands"
+              @change="onBrandsChange"
+            />
+            <span class="checkmark"></span>
+            <span class="brand-item-name">{{ brand }}</span>
+          </label>
+        </div>
+        <div class="selected-count">
+          {{ selectedBrands.length }} of {{ brands.length }} selected
+        </div>
+      </div>
     </aside>
     
     <main class="main-content">
-      <div class="matrix-header">
-      <div class="header-left">
-        <button @click="$router.push('/dashboard')" class="header-btn back-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-          Back
-        </button>
-        <h1>Lens Stock Matrix</h1>
-      </div>
-      <div class="matrix-legend">
-        <span class="legend-item">
-          <span class="legend-color in-stock"></span> In Stock
-        </span>
-        <span class="legend-item">
-          <span class="legend-color low-stock"></span> Low Stock
-        </span>
-        <span class="legend-item">
-          <span class="legend-color out-stock"></span> Out of Stock
-        </span>
-      </div>
-    </div>
-
+      
     <!-- Filters Section -->
     <div class="filters-section">
       <div class="filter-group">
-        <label>Item Group</label>
-        <select v-model="selectedItemGroup" class="filter-select" :disabled="loadingFilters">
-          <option value="">{{ loadingFilters ? 'Loading...' : 'All Groups' }}</option>
-          <option v-for="group in itemGroups" :key="group" :value="group">
-            {{ group }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Brand</label>
-        <select v-model="selectedBrand" class="filter-select" :disabled="loadingFilters">
-          <option value="">{{ loadingFilters ? 'Loading...' : 'All Brands' }}</option>
-          <option v-for="brand in brands" :key="brand" :value="brand">
-            {{ brand }}
-          </option>
-        </select>
-      </div>
-            <div class="filter-group">
         <label>Stock Status</label>
         <select v-model="stockStatusFilter" class="filter-select">
           <option value="all">All Status</option>
@@ -112,19 +138,35 @@
     </div>
 
     <div class="matrix-container">
-      <!-- Matrix Tabs -->
-      <div class="matrix-tabs">
-        <button
-          v-for="tab in ['--', '-+', '++']"
-          :key="tab"
-          class="matrix-tab"
-          :class="{ active: selectedTab === tab }"
-          @click="selectedTab = tab"
-        >
-          <span class="tab-cly">{{ tab[0] }}</span>
-          <span class="tab-divider">/</span>
-          <span class="tab-sph">{{ tab[1] }}</span>
-        </button>
+      <!-- Matrix Header Row with Tabs and Legend -->
+      <div class="matrix-header-row">
+        <!-- Matrix Tabs -->
+        <div class="matrix-tabs">
+          <button
+            v-for="tab in ['--', '-+', '++']"
+            :key="tab"
+            class="matrix-tab"
+            :class="{ active: selectedTab === tab }"
+            @click="selectedTab = tab"
+          >
+            <span class="tab-cly">{{ tab[0] }}</span>
+            <span class="tab-divider">/</span>
+            <span class="tab-sph">{{ tab[1] }}</span>
+          </button>
+        </div>
+        
+        <!-- Matrix Legend -->
+        <div class="matrix-legend">
+          <span class="legend-item">
+            <span class="legend-color in-stock"></span> In Stock
+          </span>
+          <span class="legend-item">
+            <span class="legend-color low-stock"></span> Low Stock
+          </span>
+          <span class="legend-item">
+            <span class="legend-color out-stock"></span> Out of Stock
+          </span>
+        </div>
       </div>
       
       <div v-if="loadingItems" class="matrix-loading">
@@ -234,11 +276,14 @@ export default {
       selectedCly: 0,
       editQuantity: 0,
       // Filter states
-      selectedItemGroup: '',
-      selectedBrand: '',
+      selectedItemGroups: [],
+      selectedBrands: [],
       selectedCompanies: [],
       selectedWarehouses: [],
       stockStatusFilter: 'all',
+      // Select all checkbox states
+      selectAllItemGroupsChecked: false,
+      selectAllBrandsChecked: false,
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
@@ -292,6 +337,20 @@ export default {
     selectedCompanies: {
       handler(newVal) {
         this.fetchWarehouses()
+        this.fetchItemsByFilters()
+      },
+      deep: true
+    },
+    // Watch for item groups changes - refresh items
+    selectedItemGroups: {
+      handler(newVal) {
+        this.fetchItemsByFilters()
+      },
+      deep: true
+    },
+    // Watch for brands changes - refresh items
+    selectedBrands: {
+      handler(newVal) {
         this.fetchItemsByFilters()
       },
       deep: true
@@ -404,8 +463,8 @@ export default {
       this.loadingItems = true
       try {
         const response = await this.$call('opti_stock.api.get_items_by_filters', {
-          item_group: this.selectedItemGroup || null,
-          brand: this.selectedBrand || null,
+          item_groups: this.selectedItemGroups.length > 0 ? this.selectedItemGroups : null,
+          brands: this.selectedBrands.length > 0 ? this.selectedBrands : null,
           warehouses: this.selectedWarehouses.length > 0 ? this.selectedWarehouses : null,
           companies: this.selectedCompanies.length > 0 ? this.selectedCompanies : null
         })
@@ -443,6 +502,32 @@ export default {
       // This method is called when any warehouse checkbox changes
       // The watcher will handle the API calls
       console.log('Warehouse selection changed:', this.selectedWarehouses)
+    },
+    toggleAllItemGroups() {
+      if (this.selectAllItemGroupsChecked) {
+        this.selectedItemGroups = [...this.itemGroups]
+      } else {
+        this.selectedItemGroups = []
+      }
+      console.log('Item groups selection changed:', this.selectedItemGroups)
+    },
+    onItemGroupsChange() {
+      // Update the "ALL" checkbox state based on individual selections
+      this.selectAllItemGroupsChecked = this.selectedItemGroups.length === this.itemGroups.length && this.itemGroups.length > 0
+      console.log('Item groups selection changed:', this.selectedItemGroups)
+    },
+    toggleAllBrands() {
+      if (this.selectAllBrandsChecked) {
+        this.selectedBrands = [...this.brands]
+      } else {
+        this.selectedBrands = []
+      }
+      console.log('Brands selection changed:', this.selectedBrands)
+    },
+    onBrandsChange() {
+      // Update the "ALL" checkbox state based on individual selections
+      this.selectAllBrandsChecked = this.selectedBrands.length === this.brands.length && this.brands.length > 0
+      console.log('Brands selection changed:', this.selectedBrands)
     },
     parsePowerValues(itemName) {
       // Extract power values from item name
@@ -584,24 +669,69 @@ export default {
 
 /* Sidebar */
 .sidebar {
-  width: 240px;
+  width: 280px;
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  max-height: 100vh;
 }
 
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: 1.2em;
+  font-size: 1.4em;
   font-weight: 600;
   color: white;
+}
+
+.sidebar-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.sidebar-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.sidebar-back-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-back-btn:hover svg {
+  transform: translateX(-2px);
 }
 
 /* Companies Filter */
@@ -610,6 +740,61 @@ export default {
   display: flex;
   flex-direction: column;
   padding: 16px;
+}
+
+.companies-filter h3,
+.item-group-filter h3,
+.brand-filter h3 {
+  margin: 0 0 16px 0;
+  font-size: 1em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.item-group-filter,
+.brand-filter {
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+
+.sidebar-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.sidebar-select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.sidebar-select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-select option {
+  background: #2c3e50;
+  color: white;
+  padding: 10px;
 }
 
 .filter-actions {
@@ -622,10 +807,11 @@ export default {
   flex: 1;
   padding: 8px 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-radius: 4px;
-  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85em;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -711,6 +897,77 @@ export default {
   margin-top: auto;
 }
 
+/* Item Groups Filter */
+.item-groups-list {
+  flex: 1;
+}
+
+.brands-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.item-group-item,
+.brand-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.item-group-item.all-option,
+.brand-item.all-option {
+  font-weight: 600;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  margin-bottom: 4px;
+}
+
+.item-group-item.all-option:hover,
+.brand-item.all-option:hover {
+  background: rgba(52, 152, 219, 0.2);
+}
+
+.item-group-item:hover,
+.brand-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.item-group-item input[type="checkbox"],
+.brand-item input[type="checkbox"] {
+  display: none;
+}
+
+.item-group-item input[type="checkbox"]:checked + .checkmark,
+.brand-item input[type="checkbox"]:checked + .checkmark {
+  background: #3498db;
+  border-color: #3498db;
+}
+
+.item-group-item input[type="checkbox"]:checked + .checkmark::after,
+.brand-item input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.item-group-name,
+.brand-item-name {
+  flex: 1;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* Warehouses Filter */
 .warehouses-filter {
   flex: 1;
@@ -722,8 +979,6 @@ export default {
 
 .warehouses-list {
   flex: 1;
-  overflow-y: auto;
-  max-height: 300px;
 }
 
 .warehouse-item {
@@ -937,14 +1192,21 @@ export default {
   background: #e74c3c;
 }
 
+/* Matrix Header Row */
+.matrix-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+}
+
 /* Matrix Tabs - Small & Square */
 .matrix-tabs {
   display: flex;
   gap: 4px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #dee2e6;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .matrix-tab {

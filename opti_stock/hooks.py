@@ -244,3 +244,5 @@ app_license = "mit"
 
 
 website_route_rules = [{'from_route': '/OpticStock/<path:app_path>', 'to_route': 'OpticStock'},]
+
+
