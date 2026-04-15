@@ -13,8 +13,13 @@
         </div>
       </div>
       <div class="companies-filter">
-        <h3>Filter by Companies</h3>
-        <div class="companies-list">
+        <div class="filter-header" @click="toggleCompanies">
+          <h3>Filter by Companies</h3>
+          <svg class="collapse-arrow" :class="{ 'rotated': !companiesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="companies-list" v-show="companiesOpen">
           <label class="company-item all-option">
             <input 
               type="checkbox" 
@@ -41,8 +46,13 @@
       </div>
       
       <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
-        <h3>Filter by Warehouses</h3>
-        <div class="warehouses-list">
+        <div class="filter-header" @click="toggleWarehouses">
+          <h3>Filter by Warehouses</h3>
+          <svg class="collapse-arrow" :class="{ 'rotated': !warehousesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="warehouses-list" v-show="warehousesOpen">
           <label class="warehouse-item all-option">
             <input 
               type="checkbox" 
@@ -69,8 +79,13 @@
       </div>
       
       <div class="item-group-filter">
-        <h3>Item Group</h3>
-        <div class="item-groups-list">
+        <div class="filter-header" @click="toggleItemGroups">
+          <h3>Item Group</h3>
+          <svg class="collapse-arrow" :class="{ 'rotated': !itemGroupsOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="item-groups-list" v-show="itemGroupsOpen">
           <label class="item-group-item all-option">
             <input 
               type="checkbox" 
@@ -97,8 +112,13 @@
       </div>
       
       <div class="brand-filter">
-        <h3>Brand</h3>
-        <div class="brands-list">
+        <div class="filter-header" @click="toggleBrands">
+          <h3>Brand</h3>
+          <svg class="collapse-arrow" :class="{ 'rotated': !brandsOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+        <div class="brands-list" v-show="brandsOpen">
           <label class="brand-item all-option">
             <input 
               type="checkbox" 
@@ -296,6 +316,11 @@ export default {
       selectAllWarehousesChecked: false,
       selectAllItemGroupsChecked: false,
       selectAllBrandsChecked: false,
+      // Collapse states - default closed
+      companiesOpen: false,
+      warehousesOpen: false,
+      itemGroupsOpen: false,
+      brandsOpen: false,
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
@@ -544,6 +569,19 @@ export default {
       this.selectAllBrandsChecked = this.selectedBrands.length === this.brands.length && this.brands.length > 0
       console.log('Brands selection changed:', this.selectedBrands)
     },
+    // Toggle methods for collapsible sections
+    toggleCompanies() {
+      this.companiesOpen = !this.companiesOpen
+    },
+    toggleWarehouses() {
+      this.warehousesOpen = !this.warehousesOpen
+    },
+    toggleItemGroups() {
+      this.itemGroupsOpen = !this.itemGroupsOpen
+    },
+    toggleBrands() {
+      this.brandsOpen = !this.brandsOpen
+    },
     parsePowerValues(itemName) {
       // Extract power values from item name
       // Example: "1.56 HMC -2.00 +0.25" -> CLY: -2.00, SPH: +0.25
@@ -751,16 +789,28 @@ export default {
 
 /* Companies Filter */
 .companies-filter {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 0 16px 8px 16px;
 }
 
-.companies-filter h3,
-.item-group-filter h3,
-.brand-filter h3 {
-  margin: 0 0 16px 0;
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.filter-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-header h3 {
+  margin: 0;
   font-size: 1em;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
@@ -768,10 +818,22 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.collapse-arrow {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: transform 0.3s ease;
+}
+
+.collapse-arrow.rotated {
+  transform: rotate(-90deg);
+}
+
 .item-group-filter,
 .brand-filter {
-  margin-bottom: 16px;
-  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px 8px 16px;
 }
 
 .sidebar-select {
@@ -996,10 +1058,9 @@ export default {
 
 /* Warehouses Filter */
 .warehouses-filter {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 0 16px 8px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
