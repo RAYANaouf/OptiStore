@@ -1,6 +1,34 @@
 <template>
   <div class="stock-matrix-page">
-    <div class="matrix-header">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Filter by Companies</h2>
+      </div>
+      <div class="companies-filter">
+        <div class="filter-actions">
+          <button @click="selectAllCompanies" class="action-btn select-all">Select All</button>
+          <button @click="clearAllCompanies" class="action-btn clear-all">Clear All</button>
+        </div>
+        <div class="companies-list">
+          <label v-for="company in companies" :key="company" class="company-item">
+            <input 
+              type="checkbox" 
+              :value="company" 
+              v-model="selectedCompanies"
+              @change="onCompaniesChange"
+            />
+            <span class="checkmark"></span>
+            <span class="company-name">{{ company }}</span>
+          </label>
+        </div>
+        <div class="selected-count">
+          {{ selectedCompanies.length }} of {{ companies.length }} selected
+        </div>
+      </div>
+    </aside>
+    
+    <main class="main-content">
+      <div class="matrix-header">
       <div class="header-left">
         <button @click="$router.push('/dashboard')" class="header-btn back-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,18 +72,9 @@
         </select>
       </div>
       <div class="filter-group">
-        <label>Company</label>
-        <select v-model="selectedCompany" class="filter-select" :disabled="loadingFilters">
-          <option value="">{{ loadingFilters ? 'Loading...' : 'All Companies' }}</option>
-          <option v-for="company in companies" :key="company" :value="company">
-            {{ company }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group">
         <label>Warehouse</label>
-        <select v-model="selectedWarehouse" class="filter-select" :disabled="loadingFilters || !selectedCompany">
-          <option value="">{{ loadingFilters ? 'Loading...' : (selectedCompany ? 'All Warehouses' : 'Select Company First') }}</option>
+        <select v-model="selectedWarehouse" class="filter-select" :disabled="loadingFilters || selectedCompanies.length === 0">
+          <option value="">{{ loadingFilters ? 'Loading...' : (selectedCompanies.length > 0 ? 'All Warehouses' : 'Select Companies First') }}</option>
           <option v-for="warehouse in warehouses" :key="warehouse" :value="warehouse">
             {{ warehouse }}
           </option>
@@ -174,6 +193,7 @@
         </div>
       </div>
     </div>
+    </main>
   </div>
 </template>
 
@@ -203,7 +223,7 @@ export default {
       // Filter states
       selectedItemGroup: '',
       selectedBrand: '',
-      selectedCompany: '',
+      selectedCompanies: [],
       selectedWarehouse: '',
       stockStatusFilter: 'all',
       // Filter options - loaded from ERPNext
@@ -255,10 +275,13 @@ export default {
     selectedBrand(newVal) {
       this.fetchItemsByFilters()
     },
-    // Watch for company changes - fetch warehouses and refresh items
-    selectedCompany(newVal) {
-      this.fetchWarehouses()
-      this.fetchItemsByFilters()
+    // Watch for companies changes - fetch warehouses and refresh items
+    selectedCompanies: {
+      handler(newVal) {
+        this.fetchWarehouses()
+        this.fetchItemsByFilters()
+      },
+      deep: true
     },
     // Watch for warehouse changes - refresh items
     selectedWarehouse(newVal) {
@@ -368,7 +391,7 @@ export default {
           item_group: this.selectedItemGroup || null,
           brand: this.selectedBrand || null,
           warehouse: this.selectedWarehouse || null,
-          company: this.selectedCompany || null
+          companies: this.selectedCompanies.length > 0 ? this.selectedCompanies : null
         })
 
         console.log("fetched items : " , response)
@@ -383,6 +406,16 @@ export default {
       } finally {
         this.loadingItems = false
       }
+    },
+    selectAllCompanies() {
+      this.selectedCompanies = [...this.companies]
+    },
+    clearAllCompanies() {
+      this.selectedCompanies = []
+    },
+    onCompaniesChange() {
+      // This method is called when any company checkbox changes
+      // The watcher will handle the API calls
     },
     parsePowerValues(itemName) {
       // Extract power values from item name
@@ -505,14 +538,148 @@ export default {
 
 <style scoped>
 .stock-matrix-page {
-  padding: 20px;
+  display: flex;
   height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+  color: white;
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: white;
+}
+
+/* Companies Filter */
+.companies-filter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.action-btn.select-all {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: #3498db;
+}
+
+.action-btn.clear-all {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: #e74c3c;
+}
+
+.companies-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.company-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.company-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.company-item input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.company-item input[type="checkbox"]:checked + .checkmark {
+  background: #3498db;
+  border-color: #3498db;
+}
+
+.company-item input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.company-name {
+  flex: 1;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.selected-count {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
   gap: 20px;
-  box-sizing: border-box;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .matrix-header {
@@ -577,15 +744,15 @@ export default {
   gap: 20px;
 }
 
-/* Filters Section */
+/* Filters Section - Compact */
 .filters-section {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: flex-end;
-  padding: 20px;
+  padding: 12px 16px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
   flex-wrap: nowrap;
   flex-shrink: 0;
@@ -594,8 +761,10 @@ export default {
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-width: 140px;
+  max-width: 180px;
 }
 
 .filter-group label {
@@ -608,12 +777,13 @@ export default {
 
 .filter-select,
 .filter-input {
-  padding: 10px 14px;
+  padding: 8px 10px;
   border: 2px solid #e1e8ed;
-  border-radius: 8px;
-  font-size: 0.95em;
+  border-radius: 6px;
+  font-size: 0.85em;
   background: white;
   transition: border-color 0.2s;
+  min-width: 140px;
 }
 
 .filter-select:focus,
