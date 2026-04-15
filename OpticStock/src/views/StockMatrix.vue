@@ -14,7 +14,10 @@
       </div>
       <div class="companies-filter">
         <div class="filter-header" @click="toggleCompanies">
-          <h3>Filter by Companies</h3>
+          <div class="header-content">
+            <h3>Filter by Companies</h3>
+            <div class="selection-count">{{ selectedCompanies.length }} of {{ companies.length }} selected</div>
+          </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !companiesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6"/>
           </svg>
@@ -40,14 +43,14 @@
             <span class="company-name">{{ company }}</span>
           </label>
         </div>
-        <div class="selected-count">
-          {{ selectedCompanies.length }} of {{ companies.length }} selected
-        </div>
       </div>
       
       <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
         <div class="filter-header" @click="toggleWarehouses">
-          <h3>Filter by Warehouses</h3>
+          <div class="header-content">
+            <h3>Filter by Warehouses</h3>
+            <div class="selection-count">{{ selectedWarehouses.length }} of {{ warehouses.length }} selected</div>
+          </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !warehousesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6"/>
           </svg>
@@ -73,14 +76,14 @@
             <span class="warehouse-name">{{ warehouse }}</span>
           </label>
         </div>
-        <div class="selected-count">
-          {{ selectedWarehouses.length }} of {{ warehouses.length }} selected
-        </div>
       </div>
       
       <div class="item-group-filter">
         <div class="filter-header" @click="toggleItemGroups">
-          <h3>Item Group</h3>
+          <div class="header-content">
+            <h3>Item Group</h3>
+            <div class="selection-count">{{ selectedItemGroups.length }} of {{ itemGroups.length }} selected</div>
+          </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !itemGroupsOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6"/>
           </svg>
@@ -106,14 +109,14 @@
             <span class="item-group-name">{{ group }}</span>
           </label>
         </div>
-        <div class="selected-count">
-          {{ selectedItemGroups.length }} of {{ itemGroups.length }} selected
-        </div>
       </div>
       
       <div class="brand-filter">
         <div class="filter-header" @click="toggleBrands">
-          <h3>Brand</h3>
+          <div class="header-content">
+            <h3>Brand</h3>
+            <div class="selection-count">{{ selectedBrands.length }} of {{ brands.length }} selected</div>
+          </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !brandsOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6"/>
           </svg>
@@ -138,9 +141,6 @@
             <span class="checkmark"></span>
             <span class="brand-item-name">{{ brand }}</span>
           </label>
-        </div>
-        <div class="selected-count">
-          {{ selectedBrands.length }} of {{ brands.length }} selected
         </div>
       </div>
     </aside>
@@ -809,6 +809,13 @@ export default {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
 .filter-header h3 {
   margin: 0;
   font-size: 1em;
@@ -818,11 +825,18 @@ export default {
   letter-spacing: 0.5px;
 }
 
+.selection-count {
+  font-size: 0.75em;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
 .collapse-arrow {
   width: 16px;
   height: 16px;
   color: rgba(255, 255, 255, 0.6);
   transition: transform 0.3s ease;
+  flex-shrink: 0;
 }
 
 .collapse-arrow.rotated {
