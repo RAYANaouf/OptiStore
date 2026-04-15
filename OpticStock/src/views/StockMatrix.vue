@@ -1,21 +1,22 @@
 <template>
   <div class="stock-matrix-page">
-    <aside class="sidebar">
+    <aside class="sidebar" :class="{ 'collapsed': !sidebarOpen }">
       <div class="sidebar-header">
         <div class="header-title-row">
-          <button @click="$router.push('/dashboard')" class="sidebar-back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
+          <button @click="toggleSidebar" class="sidebar-toggle-btn">
+            <svg v-if="sidebarOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
-            Back
+            <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
           </button>
-          <h2>OptiStock</h2>
         </div>
       </div>
       <div class="companies-filter">
         <div class="filter-header" @click="toggleCompanies">
           <div class="header-content">
-            <h3>Filter by Companies</h3>
+            <h3>Companies</h3>
             <div class="selection-count">{{ selectedCompanies.length }} of {{ companies.length }} selected</div>
           </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !companiesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,7 +49,7 @@
       <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
         <div class="filter-header" @click="toggleWarehouses">
           <div class="header-content">
-            <h3>Filter by Warehouses</h3>
+            <h3>Warehouses</h3>
             <div class="selection-count">{{ selectedWarehouses.length }} of {{ warehouses.length }} selected</div>
           </div>
           <svg class="collapse-arrow" :class="{ 'rotated': !warehousesOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -150,6 +151,12 @@
     <!-- Filters Section -->
     <div class="filters-section">
       <div class="filter-group">
+        <!-- Menu button to open sidebar when collapsed -->
+        <button v-if="!sidebarOpen" @click="toggleSidebar" class="menu-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
         <label>Stock Status</label>
         <select v-model="stockStatusFilter" class="filter-select">
           <option value="all">All Status</option>
@@ -321,6 +328,8 @@ export default {
       warehousesOpen: true,
       itemGroupsOpen: true,
       brandsOpen: true,
+      // Sidebar toggle state
+      sidebarOpen: true,
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
@@ -570,6 +579,9 @@ export default {
       console.log('Brands selection changed:', this.selectedBrands)
     },
     // Toggle methods for collapsible sections
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen
+    },
     toggleCompanies() {
       this.companiesOpen = !this.companiesOpen
     },
@@ -730,6 +742,14 @@ export default {
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
   max-height: 100vh;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-100%);
+  opacity: 0;
 }
 
 .sidebar-header {
@@ -754,11 +774,11 @@ export default {
   color: white;
 }
 
-.sidebar-back-btn {
+.sidebar-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  justify-content: center;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -818,7 +838,7 @@ export default {
 
 .filter-header h3 {
   margin: 0;
-  font-size: 1em;
+  font-size: 0.85em;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
@@ -923,10 +943,9 @@ export default {
 
 .companies-list {
   flex: 1;
-  overflow-y: auto;
-  max-height: 400px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
+  transform-origin: top;
 }
 
 .companies-list.collapsed {
@@ -938,10 +957,9 @@ export default {
 .item-groups-list,
 .brands-list {
   flex: 1;
-  overflow-y: auto;
-  max-height: 200px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
+  transform-origin: top;
 }
 
 .item-groups-list.collapsed,
@@ -1152,6 +1170,37 @@ export default {
   gap: 20px;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.menu-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(44, 62, 80, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 5;
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.menu-btn:hover {
+  background: rgba(44, 62, 80, 1);
+  transform: translateY(-2px);
+}
+
+.menu-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .matrix-header {
