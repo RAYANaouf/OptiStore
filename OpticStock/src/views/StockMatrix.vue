@@ -22,7 +22,7 @@
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
-        <div class="companies-list" v-show="companiesOpen">
+        <div class="companies-list" :class="{ 'collapsed': !companiesOpen }">
           <label class="company-item all-option">
             <input 
               type="checkbox" 
@@ -55,7 +55,7 @@
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
-        <div class="warehouses-list" v-show="warehousesOpen">
+        <div class="warehouses-list" :class="{ 'collapsed': !warehousesOpen }">
           <label class="warehouse-item all-option">
             <input 
               type="checkbox" 
@@ -88,7 +88,7 @@
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
-        <div class="item-groups-list" v-show="itemGroupsOpen">
+        <div class="item-groups-list" :class="{ 'collapsed': !itemGroupsOpen }">
           <label class="item-group-item all-option">
             <input 
               type="checkbox" 
@@ -121,7 +121,7 @@
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
-        <div class="brands-list" v-show="brandsOpen">
+        <div class="brands-list" :class="{ 'collapsed': !brandsOpen }">
           <label class="brand-item all-option">
             <input 
               type="checkbox" 
@@ -316,11 +316,11 @@ export default {
       selectAllWarehousesChecked: false,
       selectAllItemGroupsChecked: false,
       selectAllBrandsChecked: false,
-      // Collapse states - default closed
-      companiesOpen: false,
-      warehousesOpen: false,
-      itemGroupsOpen: false,
-      brandsOpen: false,
+      // Collapse states - default open
+      companiesOpen: true,
+      warehousesOpen: true,
+      itemGroupsOpen: true,
+      brandsOpen: true,
       // Filter options - loaded from ERPNext
       itemGroups: [],
       brands: [],
@@ -925,6 +925,42 @@ export default {
   flex: 1;
   overflow-y: auto;
   max-height: 400px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.companies-list.collapsed {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.item-groups-list,
+.brands-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 200px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.item-groups-list.collapsed,
+.brands-list.collapsed {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.warehouses-list {
+  flex: 1;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+.warehouses-list.collapsed {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .company-item {
@@ -1000,16 +1036,6 @@ export default {
 }
 
 /* Item Groups Filter */
-.item-groups-list {
-  flex: 1;
-}
-
-.brands-list {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 200px;
-}
-
 .item-group-item,
 .brand-item {
   display: flex;
