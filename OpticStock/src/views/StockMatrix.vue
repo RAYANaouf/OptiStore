@@ -14,11 +14,16 @@
       </div>
       <div class="companies-filter">
         <h3>Filter by Companies</h3>
-        <div class="filter-actions">
-          <button @click="selectAllCompanies" class="action-btn select-all">Select All</button>
-          <button @click="clearAllCompanies" class="action-btn clear-all">Clear All</button>
-        </div>
         <div class="companies-list">
+          <label class="company-item all-option">
+            <input 
+              type="checkbox" 
+              v-model="selectAllCompaniesChecked"
+              @change="toggleAllCompanies"
+            />
+            <span class="checkmark"></span>
+            <span class="company-name">ALL</span>
+          </label>
           <label v-for="company in companies" :key="company" class="company-item">
             <input 
               type="checkbox" 
@@ -37,11 +42,16 @@
       
       <div class="warehouses-filter" v-if="selectedCompanies.length > 0">
         <h3>Filter by Warehouses</h3>
-        <div class="filter-actions">
-          <button @click="selectAllWarehouses" class="action-btn select-all">Select All</button>
-          <button @click="clearAllWarehouses" class="action-btn clear-all">Clear All</button>
-        </div>
         <div class="warehouses-list">
+          <label class="warehouse-item all-option">
+            <input 
+              type="checkbox" 
+              v-model="selectAllWarehousesChecked"
+              @change="toggleAllWarehouses"
+            />
+            <span class="checkmark"></span>
+            <span class="warehouse-name">ALL</span>
+          </label>
           <label v-for="warehouse in warehouses" :key="warehouse" class="warehouse-item">
             <input 
               type="checkbox" 
@@ -282,6 +292,8 @@ export default {
       selectedWarehouses: [],
       stockStatusFilter: 'all',
       // Select all checkbox states
+      selectAllCompaniesChecked: false,
+      selectAllWarehousesChecked: false,
       selectAllItemGroupsChecked: false,
       selectAllBrandsChecked: false,
       // Filter options - loaded from ERPNext
@@ -482,25 +494,28 @@ export default {
         this.loadingItems = false
       }
     },
-    selectAllCompanies() {
-      this.selectedCompanies = [...this.companies]
-    },
-    clearAllCompanies() {
-      this.selectedCompanies = []
+    toggleAllCompanies() {
+      if (this.selectAllCompaniesChecked) {
+        this.selectedCompanies = [...this.companies]
+      } else {
+        this.selectedCompanies = []
+      }
     },
     onCompaniesChange() {
-      // This method is called when any company checkbox changes
-      // The watcher will handle the API calls
+      // Update the "ALL" checkbox state based on individual selections
+      this.selectAllCompaniesChecked = this.selectedCompanies.length === this.companies.length && this.companies.length > 0
     },
-    selectAllWarehouses() {
-      this.selectedWarehouses = [...this.warehouses]
-    },
-    clearAllWarehouses() {
-      this.selectedWarehouses = []
+    toggleAllWarehouses() {
+      if (this.selectAllWarehousesChecked) {
+        this.selectedWarehouses = [...this.warehouses]
+      } else {
+        this.selectedWarehouses = []
+      }
+      console.log('Warehouse selection changed:', this.selectedWarehouses)
     },
     onWarehousesChange() {
-      // This method is called when any warehouse checkbox changes
-      // The watcher will handle the API calls
+      // Update the "ALL" checkbox state based on individual selections
+      this.selectAllWarehousesChecked = this.selectedWarehouses.length === this.warehouses.length && this.warehouses.length > 0
       console.log('Warehouse selection changed:', this.selectedWarehouses)
     },
     toggleAllItemGroups() {
@@ -846,6 +861,17 @@ export default {
   transition: background-color 0.2s ease;
 }
 
+.company-item.all-option {
+  font-weight: 600;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  margin-bottom: 4px;
+}
+
+.company-item.all-option:hover {
+  background: rgba(52, 152, 219, 0.2);
+}
+
 .company-item:hover {
   background: rgba(255, 255, 255, 0.1);
 }
@@ -989,6 +1015,17 @@ export default {
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+}
+
+.warehouse-item.all-option {
+  font-weight: 600;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  margin-bottom: 4px;
+}
+
+.warehouse-item.all-option:hover {
+  background: rgba(52, 152, 219, 0.2);
 }
 
 .warehouse-item:hover {
